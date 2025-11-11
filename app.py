@@ -27,46 +27,378 @@ except ImportError:
 
 st.set_page_config(page_title="Аналіз продажів за сегментами", layout="wide", initial_sidebar_state="collapsed")
 
-# Мобільна оптимізація
+# Сучасна стилізація з рамками та розділенням
 st.markdown("""
 <style>
-    /* Адаптивний дизайн для мобільних пристроїв */
+    /* ============= ЗАГАЛЬНІ СТИЛІ ============= */
+
+    /* Основний контейнер */
+    .main {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+        padding: 2rem;
+    }
+
+    /* Заголовки */
+    h1 {
+        color: #1e3a8a;
+        font-weight: 700;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white !important;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        margin-bottom: 2rem;
+        border-left: 6px solid #1e40af;
+    }
+
+    h2 {
+        color: #1e40af;
+        font-weight: 600;
+        padding: 1rem 1.5rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        margin: 2rem 0 1.5rem 0;
+        border-left: 5px solid #3b82f6;
+        border-bottom: 2px solid #e0e7ff;
+    }
+
+    h3 {
+        color: #2563eb;
+        font-weight: 600;
+        padding: 0.8rem 1.2rem;
+        background: linear-gradient(to right, #eff6ff, #ffffff);
+        border-radius: 8px;
+        border-left: 4px solid #60a5fa;
+        margin: 1.5rem 0 1rem 0;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ============= МЕТРИКИ ============= */
+
+    [data-testid="metric-container"] {
+        background: white;
+        padding: 1.2rem;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="metric-container"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
+        border-color: #3b82f6;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #1e40af;
+        font-weight: 700;
+        font-size: 1.8rem;
+    }
+
+    /* ============= ГРАФІКИ ============= */
+
+    .stPlotlyChart {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin: 1rem 0;
+    }
+
+    /* ============= РОЗДІЛИ ТА КАРТОЧКИ ============= */
+
+    .stMarkdown {
+        line-height: 1.7;
+    }
+
+    /* Інформаційні блоки */
+    .element-container:has(> .stAlert) {
+        margin: 1rem 0;
+    }
+
+    div[data-baseweb="notification"] {
+        border-radius: 10px;
+        border-left: 5px solid;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 1rem 1.5rem;
+    }
+
+    /* Успіх */
+    .stSuccess {
+        background: linear-gradient(to right, #ecfdf5, #ffffff) !important;
+        border-left-color: #10b981 !important;
+        border: 2px solid #d1fae5 !important;
+    }
+
+    /* Інформація */
+    .stInfo {
+        background: linear-gradient(to right, #eff6ff, #ffffff) !important;
+        border-left-color: #3b82f6 !important;
+        border: 2px solid #dbeafe !important;
+    }
+
+    /* Попередження */
+    .stWarning {
+        background: linear-gradient(to right, #fffbeb, #ffffff) !important;
+        border-left-color: #f59e0b !important;
+        border: 2px solid #fef3c7 !important;
+    }
+
+    /* Помилка */
+    .stError {
+        background: linear-gradient(to right, #fef2f2, #ffffff) !important;
+        border-left-color: #ef4444 !important;
+        border: 2px solid #fecaca !important;
+    }
+
+    /* ============= ТАБЛИЦІ ============= */
+
+    [data-testid="stDataFrame"] {
+        border: 2px solid #e0e7ff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    [data-testid="stDataFrame"] table {
+        background: white;
+    }
+
+    [data-testid="stDataFrame"] thead tr {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: white !important;
+    }
+
+    [data-testid="stDataFrame"] thead th {
+        color: white !important;
+        font-weight: 600;
+        padding: 1rem;
+        border-bottom: 3px solid #1e40af;
+    }
+
+    [data-testid="stDataFrame"] tbody tr:nth-child(even) {
+        background: #f8fafc;
+    }
+
+    [data-testid="stDataFrame"] tbody tr:hover {
+        background: #eff6ff;
+    }
+
+    /* ============= КНОПКИ ТА ЕЛЕМЕНТИ ВВОДУ ============= */
+
+    .stButton > button {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.7rem 2rem;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    }
+
+    /* Текстові поля */
+    .stTextInput > div > div {
+        border: 2px solid #e0e7ff;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .stTextInput > div > div:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Селектори */
+    .stSelectbox > div > div {
+        border: 2px solid #e0e7ff;
+        border-radius: 10px;
+        background: white;
+    }
+
+    /* Радіо кнопки */
+    .stRadio > div {
+        background: white;
+        padding: 1rem;
+        border-radius: 10px;
+        border: 2px solid #e0e7ff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Мультивибір */
+    .stMultiSelect > div > div {
+        border: 2px solid #e0e7ff;
+        border-radius: 10px;
+        background: white;
+    }
+
+    /* ============= EXPANDER (РОЗГОРТАННЯ) ============= */
+
+    .streamlit-expanderHeader {
+        background: white;
+        border: 2px solid #e0e7ff;
+        border-radius: 10px;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #1e40af;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .streamlit-expanderHeader:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+
+    .streamlit-expanderContent {
+        background: white;
+        border: 2px solid #e0e7ff;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    /* ============= РОЗДІЛЮВАЧІ ============= */
+
+    hr {
+        margin: 2.5rem 0;
+        border: none;
+        height: 3px;
+        background: linear-gradient(to right, transparent, #3b82f6, transparent);
+        border-radius: 5px;
+    }
+
+    /* ============= ПРІОРИТЕТИ (CUSTOM BOX) ============= */
+
+    .priority-box {
+        border-left: 5px solid;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 10px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    /* ============= КОЛОНКИ ============= */
+
+    [data-testid="column"] {
+        background: white;
+        padding: 1rem;
+        border-radius: 10px;
+        border: 2px solid #f1f5f9;
+        margin: 0.5rem;
+    }
+
+    /* ============= ЗАВАНТАЖУВАЧ ФАЙЛІВ ============= */
+
+    [data-testid="stFileUploader"] {
+        background: white;
+        padding: 2rem;
+        border: 3px dashed #3b82f6;
+        border-radius: 12px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="stFileUploader"]:hover {
+        border-color: #2563eb;
+        background: #eff6ff;
+    }
+
+    /* ============= МОБІЛЬНА АДАПТАЦІЯ ============= */
+
     @media (max-width: 768px) {
         .stPlotlyChart {
             height: 350px !important;
+            padding: 1rem;
         }
+
         .element-container {
             font-size: 14px !important;
         }
+
         h1 {
             font-size: 24px !important;
+            padding: 1rem;
         }
+
         h2 {
             font-size: 20px !important;
+            padding: 0.8rem 1rem;
         }
+
         h3 {
             font-size: 18px !important;
+            padding: 0.6rem 1rem;
         }
+
         .row-widget.stButton {
             width: 100% !important;
         }
-        /* Повноширинні метрики на мобільних */
+
         [data-testid="metric-container"] {
             min-width: 100% !important;
+            margin-bottom: 1rem;
+        }
+
+        [data-testid="column"] {
+            margin: 0.3rem;
+            padding: 0.7rem;
         }
     }
 
-    /* Покращена читабельність на всіх пристроях */
-    .stMarkdown {
-        line-height: 1.6;
+    /* ============= АНІМАЦІЇ ============= */
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    /* Виділення пріоритетів */
-    .priority-box {
-        border-left: 5px solid;
-        padding: 15px;
-        margin: 10px 0;
-        border-radius: 5px;
+    .element-container {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    /* ============= СКРОЛЛБАР ============= */
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #2563eb, #1e40af);
     }
 </style>
 """, unsafe_allow_html=True)
