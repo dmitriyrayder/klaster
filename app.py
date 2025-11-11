@@ -1,1249 +1,643 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import warnings
-warnings.filterwarnings('ignore')
-
-try:
-    from prophet import Prophet
-    PROPHET_AVAILABLE = True
-except ImportError:
-    PROPHET_AVAILABLE = False
-    st.warning("⚠️ Prophet не встановлено. Прогнози будуть недоступні.")
-
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from io import BytesIO
-
-st.set_page_config(page_title="Аналіз товарів", layout="wide")
-
-# Премиум стилизация с градиентами и современными эффектами
-st.markdown("""
-<style>
-    /* 1. Общий фон приложения */
-    .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    }
-
-    /* 2. Главный заголовок */
-    .main-header {
-        font-size: 3rem;
-        font-weight: 800;
-        background: linear-gradient(120deg, #1f77b4, #667eea);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        border-bottom: 3px solid #667eea;
-        padding: 1rem;
-        margin-bottom: 2rem;
-        text-align: center;
-    }
-
-    /* Заголовки h1, h2, h3 */
-    h1 {
-        color: #2d3748;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
-        margin-bottom: 1.5rem;
-        background: linear-gradient(120deg, #1f77b4, #667eea);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    h2 {
-        color: #2d3748;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
-        margin-bottom: 1.5rem;
-    }
-
-    h3 {
-        color: #2d3748;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
-        margin-bottom: 1.5rem;
-    }
-
-    /* 3. Боковая панель */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        border-right: 3px solid #667eea;
-        box-shadow: 4px 0 15px rgba(0,0,0,0.2);
-        padding: 2rem 1rem;
-    }
-
-    /* 4. Основной контейнер */
-    .main .block-container {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        padding: 2rem 3rem;
-        margin: 2rem auto;
-    }
-
-    /* 5. Разделитель */
-    hr {
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #667eea, transparent);
-        border: none;
-        margin: 2rem 0;
-    }
-
-    /* 6. Карточки метрик */
-    .metric-container, [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 15px;
-        color: white;
-        text-align: center;
-        padding: 1.5rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        border: 2px solid rgba(255,255,255,0.3);
-        transition: all 0.3s ease;
-    }
-
-    .metric-container:hover, [data-testid="stMetric"]:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.3);
-    }
-
-    [data-testid="stMetricValue"] {
-        color: white !important;
-        font-size: 2rem !important;
-        font-weight: bold;
-    }
-
-    [data-testid="stMetricLabel"] {
-        color: rgba(255, 255, 255, 0.9) !important;
-    }
-
-    /* 7. Карточки инсайтов */
-    .insight-card {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        border-radius: 12px;
-        color: white;
-        padding: 1.2rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        border-left: 5px solid #fff;
-        border: 2px solid rgba(255,255,255,0.3);
-    }
-
-    /* 8. Карточки проблем */
-    .problem-card {
-        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
-        border-radius: 12px;
-        color: white;
-        font-weight: 500;
-        padding: 1.2rem;
-        margin: 0.5rem 0;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        border-left: 5px solid #ee5a6f;
-        border: 2px solid rgba(255,255,255,0.3);
-    }
-
-    /* 9. Карточки точности */
-    .accuracy-card {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        border-radius: 15px;
-        color: white;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        border: 2px solid rgba(255,255,255,0.3);
-    }
-
-    /* 10. Колонки */
-    div[data-testid="column"] {
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 12px;
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        padding: 1.5rem;
-        margin: 0.5rem;
-        transition: all 0.3s ease;
-    }
-
-    div[data-testid="column"]:hover {
-        border-color: rgba(102, 126, 234, 0.4);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-        transform: translateY(-2px);
-    }
-
-    /* 11. Элементы управления */
-    .stSelectbox > div > div,
-    .stMultiSelect > div > div,
-    .stSlider,
-    .stDateInput,
-    .stNumberInput > div > div,
-    .stTextInput > div > div {
-        background: white;
-        border-radius: 10px;
-        padding: 0.5rem;
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .stTextInput > div > div > input,
-    .stSelectbox select,
-    .stNumberInput input {
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        border-radius: 8px;
-        padding: 0.5rem;
-        transition: all 0.3s ease;
-    }
-
-    .stTextInput > div > div > input:focus,
-    .stSelectbox select:focus,
-    .stNumberInput input:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
-    }
-
-    /* 12. Кнопки */
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: 2px solid rgba(255,255,255,0.3);
-        border-radius: 10px;
-        padding: 0.75rem 2rem;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        transition: all 0.3s ease;
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    }
-
-    /* 13. Вкладки */
-    .stTabs [data-baseweb="tab-list"] {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 12px;
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        padding: 1rem;
-        gap: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 8px;
-        padding: 0.75rem 1.5rem;
-        border: 2px solid rgba(255,255,255,0.3);
-        transition: all 0.3s ease;
-    }
-
-    .stTabs [data-baseweb="tab"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        border-color: rgba(255,255,255,0.5);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
-    }
-
-    /* 14. Expander */
-    .streamlit-expanderHeader {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        border-radius: 10px;
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        padding: 1rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .streamlit-expanderHeader:hover {
-        border-color: rgba(102, 126, 234, 0.5);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .streamlit-expanderContent {
-        background: rgba(255, 255, 255, 0.7);
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        border-top: none;
-        border-radius: 0 0 10px 10px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-
-    /* 15. Графики */
-    .js-plotly-plot {
-        border-radius: 12px;
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-        background: white;
-        margin: 1rem 0;
-        overflow: hidden;
-    }
-
-    /* 16. Таблицы */
-    .dataframe {
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    [data-testid="stDataFrame"] {
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    /* 17. Информационные блоки */
-    .stAlert {
-        border-radius: 12px;
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        padding: 1.5rem;
-    }
-
-    /* 18. Секции с разделением */
-    .section-divider {
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 15px;
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-        margin: 2rem 0;
-        padding: 2rem;
-    }
-
-    /* 19. Радио кнопки */
-    .stRadio > div {
-        background: rgba(255, 255, 255, 0.7);
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        border-radius: 12px;
-        padding: 1rem;
-    }
-
-    /* 20. Загрузчик файлов */
-    [data-testid="stFileUploader"] {
-        background: white;
-        border: 2px dashed rgba(102, 126, 234, 0.4);
-        border-radius: 12px;
-        padding: 2rem;
-        transition: all 0.3s ease;
-    }
-
-    [data-testid="stFileUploader"]:hover {
-        border-color: rgba(102, 126, 234, 0.6);
-        background: rgba(102, 126, 234, 0.05);
-    }
-
-    /* Дополнительные стили для улучшения визуала */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        border-radius: 10px;
-    }
-
-    .stSpinner > div {
-        border-top-color: #667eea !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Ініціалізація session_state
-if 'run_analysis' not in st.session_state:
-    st.session_state.run_analysis = False
-if 'loaded_data' not in st.session_state:
-    st.session_state.loaded_data = None
-if 'data_source_type' not in st.session_state:
-    st.session_state.data_source_type = None
-
-st.title("🔍 Аналіз товарів: визначення кандидатів на зняття")
-
-# === НАЛАШТУВАННЯ ===
-with st.sidebar:
-    st.header("⚙️ Налаштування")
-    TOP_N = st.slider("Кількість топ-артикулів для Prophet", 10, 50, 20)
-
-    st.subheader("🎯 Критерії зняття")
-    zero_weeks_threshold = st.slider("Тижнів підряд без продажів", 8, 20, 12)
-    min_total_sales = st.slider("Мінімальний обсяг продажів", 1, 50, 5)
-    max_store_ratio = st.slider("Макс. частка магазинів без продажів (%)", 70, 95, 85, 5) / 100
-
-    st.subheader("🤖 Модель ML")
-    use_balanced_model = st.checkbox("Використовувати балансування класів", value=True)
-    final_threshold = st.slider("Фінальний поріг для зняття (%)", 50, 90, 70, 5) / 100
-
-    st.divider()
-
-    # Кнопка очищення кешу
-    if st.button("🔄 Очистити кеш даних"):
-        st.session_state.loaded_data = None
-        st.cache_data.clear()
-        st.success("Кеш очищено!")
-        st.rerun()
-
-# === ЗАВАНТАЖЕННЯ ДАНИХ ===
-st.header("📁 Завантаження даних")
-st.info("💡 Формат: дата, артикул, кількість, магазин, назва")
-
-# Вибір джерела даних
-data_source = st.radio(
-    "Оберіть джерело даних:",
-    ["Google Sheets", "Локальний файл"],
-    horizontal=True
-)
-
-uploaded_file = None
-sheets_url = None
-
-if data_source == "Локальний файл":
-    uploaded_file = st.file_uploader("Оберіть Excel файл", type=['xlsx', 'xls'])
-else:
-    sheets_url = st.text_input(
-        "Посилання на Google Sheets:",
-        value="https://docs.google.com/spreadsheets/d/1lJLON5N_EKQ5ICv0Pprp5DamP1tNAhBIph4uEoWC04Q/edit?gid=64159818#gid=64159818",
-        help="Таблиця повинна мати публічний доступ"
-    )
-
-# === КЕШОВАНІ ФУНКЦІЇ ЗАВАНТАЖЕННЯ ===
-@st.cache_data(show_spinner=False)
-def _fetch_google_sheets_data(sheets_url):
-    """Кешоване завантаження сирих даних з Google Sheets"""
-    import re
-    import time
-
-    # Витягуємо spreadsheet ID
-    spreadsheet_match = re.search(r'/spreadsheets/d/([a-zA-Z0-9-_]+)', sheets_url)
-    if not spreadsheet_match:
-        raise ValueError("Невірний формат посилання на Google Sheets")
-
-    spreadsheet_id = spreadsheet_match.group(1)
-
-    # Витягуємо GID (ID аркуша)
-    gid_match = re.search(r'[#&]gid=([0-9]+)', sheets_url)
-    gid = gid_match.group(1) if gid_match else '0'
-
-    # Формуємо URL для експорту в Excel форматі
-    export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx&gid={gid}"
-
-    # Завантажуємо дані з прогрес-баром
-    progress_bar = st.progress(0, text="🔄 Підключення до Google Sheets...")
-    time.sleep(0.3)
-    progress_bar.progress(20, text="📥 Завантаження даних...")
-
-    df = pd.read_excel(export_url, nrows=100000)
-
-    progress_bar.progress(80, text="✅ Обробка даних...")
-    time.sleep(0.2)
-    progress_bar.progress(100, text="✅ Завантаження завершено!")
-    time.sleep(0.3)
-    progress_bar.empty()
-
-    return df
-
-@st.cache_data(show_spinner=False)
-def _load_excel_file(file_bytes, sheet_name):
-    """Кешоване завантаження Excel файлу"""
-    from io import BytesIO
-    import time
-
-    progress_bar = st.progress(0, text="📂 Відкриття файлу...")
-    time.sleep(0.2)
-    progress_bar.progress(30, text="📊 Читання даних...")
-
-    df = pd.read_excel(BytesIO(file_bytes), sheet_name=sheet_name, nrows=100000)
-
-    progress_bar.progress(90, text="✅ Фіналізація...")
-    time.sleep(0.2)
-    progress_bar.progress(100, text="✅ Файл завантажено!")
-    time.sleep(0.3)
-    progress_bar.empty()
-
-    return df
-
-def load_and_process_data(uploaded_file):
-    if uploaded_file is None:
-        st.info("👆 Завантажте Excel файл для початку роботи")
-        return None, False
-
-    try:
-        file_size = len(uploaded_file.read())
-        uploaded_file.seek(0)
-
-        if file_size > 50 * 1024 * 1024:
-            st.error("❌ Файл занадто великий. Максимум: 50MB")
-            return None, False
-
-        # Визначаємо аркуші
-        file_bytes = uploaded_file.read()
-        uploaded_file.seek(0)
-        excel_file = pd.ExcelFile(uploaded_file)
-        selected_sheet = st.selectbox("Оберіть аркуш:", excel_file.sheet_names) if len(excel_file.sheet_names) > 1 else excel_file.sheet_names[0]
-
-        # Використовуємо кешоване завантаження
-        df = _load_excel_file(file_bytes, selected_sheet)
-        if len(df) == 100000:
-            st.warning("⚠️ Файл обрізано до 100,000 рядків")
-
-        st.success(f"✅ Завантажено {len(df)} рядків")
-        
-        # Співставлення колонок
-        available_cols = list(df.columns)
-        col1, col2 = st.columns(2)
-
-        with col1:
-            date_col = st.selectbox("Дата:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['дат', 'date'])), 0))
-            art_col = st.selectbox("Артикул:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['арт', 'art'])), 0))
-            qty_col = st.selectbox("Кількість:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['кол', 'кіл', 'qty', 'кількість', 'количество'])), 0))
-
-        with col2:
-            magazin_col = st.selectbox("Магазин:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['маг', 'magazin', 'магазин'])), 0))
-            name_col = st.selectbox("Назва:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['назв', 'name', 'назва', 'название'])), 0))
-            segment_col = st.selectbox("Сегмент (опціонально):", ['Без сегментації'] + available_cols)
-        
-        # Перейменування колонок
-        column_mapping = {date_col: 'Data', art_col: 'Art', qty_col: 'Qty', magazin_col: 'Magazin', name_col: 'Name'}
-        if segment_col != 'Без сегментації':
-            column_mapping[segment_col] = 'Segment'
-
-        df = df.rename(columns=column_mapping)
-
-        # Перевірка обов'язкових колонок
-        required_cols = ['Data', 'Art', 'Qty', 'Magazin', 'Name']
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            st.error(f"❌ Відсутні колонки: {missing_cols}")
-            return None, False
-
-        # Фільтрація по сегменту
-        if 'Segment' in df.columns:
-            st.subheader("🎯 Вибір сегмента")
-            unique_segments = sorted(df['Segment'].dropna().unique())
-            selected_segment = st.selectbox("Сегмент:", ['Всі сегменти'] + list(unique_segments))
-
-            if selected_segment != 'Всі сегменти':
-                df = df[df['Segment'] == selected_segment].copy()
-                st.success(f"✅ Обрано сегмент: {selected_segment}")
-
-        with st.expander("📊 Попередній перегляд"):
-            st.dataframe(df.head())
-            col1, col2, col3 = st.columns(3)
-            with col1: st.metric("Записів", len(df))
-            with col2: st.metric("Артикулів", df['Art'].nunique())
-            with col3:
-                try:
-                    date_min = pd.to_datetime(df['Data'], errors='coerce').min()
-                    date_max = pd.to_datetime(df['Data'], errors='coerce').max()
-                    st.metric("Період", f"{date_min.strftime('%Y-%m-%d')} - {date_max.strftime('%Y-%m-%d')}")
-                except:
-                    st.metric("Період", "Помилка дат")
-
-        return df, True
-
-    except Exception as e:
-        st.error(f"❌ Помилка завантаження: {str(e)}")
-        return None, False
-
-def load_from_google_sheets(sheets_url):
-    """Завантаження даних з публічної Google Sheets таблиці"""
-    if not sheets_url or sheets_url.strip() == "":
-        st.info("👆 Введіть посилання на Google Sheets")
-        return None, False
-
-    try:
-        # Використовуємо кешоване завантаження даних
-        df = _fetch_google_sheets_data(sheets_url)
-
-        if len(df) == 100000:
-            st.warning("⚠️ Файл обрізано до 100,000 рядків")
-
-        st.success(f"✅ Завантажено {len(df)} рядків з Google Sheets")
-
-        # Співставлення колонок (ідентично load_and_process_data)
-        available_cols = list(df.columns)
-        col1, col2 = st.columns(2)
-
-        with col1:
-            date_col = st.selectbox("Дата:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['дат', 'date'])), 0), key="gs_date")
-            art_col = st.selectbox("Артикул:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['арт', 'art'])), 0), key="gs_art")
-            qty_col = st.selectbox("Кількість:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['кол', 'кіл', 'qty', 'кількість', 'количество'])), 0), key="gs_qty")
-
-        with col2:
-            magazin_col = st.selectbox("Магазин:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['маг', 'magazin', 'магазин'])), 0), key="gs_magazin")
-            name_col = st.selectbox("Назва:", available_cols, index=next((i for i, col in enumerate(available_cols) if any(word in col.lower() for word in ['назв', 'name', 'назва', 'название'])), 0), key="gs_name")
-            segment_col = st.selectbox("Сегмент (опціонально):", ['Без сегментації'] + available_cols, key="gs_segment")
-
-        # Перейменування колонок
-        column_mapping = {date_col: 'Data', art_col: 'Art', qty_col: 'Qty', magazin_col: 'Magazin', name_col: 'Name'}
-        if segment_col != 'Без сегментації':
-            column_mapping[segment_col] = 'Segment'
-
-        df = df.rename(columns=column_mapping)
-
-        # Перевірка обов'язкових колонок
-        required_cols = ['Data', 'Art', 'Qty', 'Magazin', 'Name']
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            st.error(f"❌ Відсутні колонки: {missing_cols}")
-            return None, False
-
-        # Фільтрація по сегменту
-        if 'Segment' in df.columns:
-            st.subheader("🎯 Вибір сегмента")
-            unique_segments = sorted(df['Segment'].dropna().unique())
-            selected_segment = st.selectbox("Сегмент:", ['Всі сегменти'] + list(unique_segments), key="gs_segment_filter")
-
-            if selected_segment != 'Всі сегменти':
-                df = df[df['Segment'] == selected_segment].copy()
-                st.success(f"✅ Обрано сегмент: {selected_segment}")
-
-        with st.expander("📊 Попередній перегляд"):
-            st.dataframe(df.head())
-            col1, col2, col3 = st.columns(3)
-            with col1: st.metric("Записів", len(df))
-            with col2: st.metric("Артикулів", df['Art'].nunique())
-            with col3:
-                try:
-                    date_min = pd.to_datetime(df['Data'], errors='coerce').min()
-                    date_max = pd.to_datetime(df['Data'], errors='coerce').max()
-                    st.metric("Період", f"{date_min.strftime('%Y-%m-%d')} - {date_max.strftime('%Y-%m-%d')}")
-                except:
-                    st.metric("Період", "Помилка дат")
-
-        return df, True
-
-    except Exception as e:
-        st.error(f"❌ Помилка завантаження з Google Sheets: {str(e)}")
-        st.info("💡 Переконайтеся, що таблиця має публічний доступ")
-        return None, False
-
-# Завантаження даних в залежності від обраного джерела з використанням session_state
-# Перевіряємо, чи змінилось джерело даних
-if st.session_state.data_source_type != data_source:
-    st.session_state.loaded_data = None  # Скидаємо кеш при зміні джерела
-    st.session_state.data_source_type = data_source
-
-# Якщо дані вже завантажені і джерело не змінилось, використовуємо кешовані
-if st.session_state.loaded_data is not None:
-    df, data_loaded = st.session_state.loaded_data
-    if data_loaded:
-        st.info("ℹ️ Використовуються раніше завантажені дані")
-else:
-    # Завантажуємо нові дані
-    if data_source == "Локальний файл":
-        df, data_loaded = load_and_process_data(uploaded_file)
-    else:
-        df, data_loaded = load_from_google_sheets(sheets_url)
-
-    # Зберігаємо в session_state
-    if data_loaded:
-        st.session_state.loaded_data = (df, data_loaded)
-
-if data_loaded:
-    st.header("🚀 Запуск аналізу")
-    if st.button("▶️ ПОЧАТИ АНАЛІЗ", type="primary", use_container_width=True):
-        st.session_state.run_analysis = True
-
-    if not st.session_state.get('run_analysis', False):
-        st.info("👆 Натисніть кнопку для запуску аналізу")
-        st.stop()
-else:
-    st.stop()
-
-# === ОСНОВНА ОБРОБКА ===
-def process_data(df):
-    with st.spinner("🔄 Обробка даних..."):
-        # Очищення даних
-        df['Data'] = pd.to_datetime(df['Data'], dayfirst=True, errors='coerce')
-        df = df.dropna(subset=['Data'])
-        df['Qty'] = pd.to_numeric(df['Qty'], errors='coerce').fillna(0)
-        df = df[df['Qty'] >= 0]
-
-        if len(df) == 0:
-            st.error("❌ Немає валідних даних")
-            st.stop()
-
-        df['year_week'] = df['Data'].dt.strftime('%Y-%U')
-
-        # Обмеження артикулів
-        all_arts = df['Art'].unique()
-        if len(all_arts) > 5000:
-            st.warning("⚠️ Обробляємо топ-5000 артикулів за продажами")
-            top_arts = df.groupby('Art')['Qty'].sum().nlargest(5000).index
-            all_arts = top_arts
-            df = df[df['Art'].isin(all_arts)]
-
-        # Агрегація по тижнях
-        weekly = df.groupby(['Art', 'year_week'])['Qty'].sum().reset_index()
-        unique_weeks = sorted(df['year_week'].unique())
-        all_weeks = pd.MultiIndex.from_product([all_arts, unique_weeks], names=['Art', 'year_week'])
-        weekly = weekly.set_index(['Art', 'year_week']).reindex(all_weeks, fill_value=0).reset_index()
-
-        return df, weekly, all_arts, unique_weeks
-
-def calculate_abc_xyz_analysis(df):
-    # ABC аналіз
-    abc_analysis = df.groupby('Art').agg({
-        'Qty': ['sum', 'mean', 'std'],
-        'Data': ['min', 'max']
-    }).reset_index()
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
+from sklearn.decomposition import PCA
+import plotly.express as px
+import plotly.graph_objects as go
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+st.set_page_config(page_title="Кластеризация магазинов", layout="wide")
+
+st.title("📊 Кластеризация магазинов по структуре ассортимента")
+st.markdown("**Метод:** Сегментация по долям товарных сегментов в обороте")
+
+# Загрузка файла
+uploaded_file = st.file_uploader("Загрузите файл с продажами (Excel)", type=['xlsx', 'xls'])
+
+if uploaded_file:
+    # Чтение данных
+    df = pd.read_excel(uploaded_file)
     
-    abc_analysis.columns = ['Art', 'total_qty', 'avg_qty', 'std_qty', 'first_sale', 'last_sale']
-    abc_analysis['days_in_catalog'] = (abc_analysis['last_sale'] - abc_analysis['first_sale']).dt.days + 1
-
-    # ABC категорії (виправлено: сортування перед кумулятивним розрахунком)
-    abc_analysis = abc_analysis.sort_values('total_qty', ascending=False).reset_index(drop=True)
-    total_sum = abc_analysis['total_qty'].sum()
-
-    # Захист від ділення на нуль
-    if total_sum > 0:
-        abc_analysis['cum_qty'] = abc_analysis['total_qty'].cumsum()
-        abc_analysis['cum_qty_pct'] = abc_analysis['cum_qty'] / total_sum
-    else:
-        abc_analysis['cum_qty'] = 0
-        abc_analysis['cum_qty_pct'] = 0
-
-    def get_abc_category(cum_pct):
-        if cum_pct <= 0.8: return 'A'
-        elif cum_pct <= 0.95: return 'B'
-        else: return 'C'
-
-    abc_analysis['abc_category'] = abc_analysis['cum_qty_pct'].apply(get_abc_category)
-
-    # XYZ аналіз (виправлено: обробка нульових значень)
-    abc_analysis['coefficient_variation'] = np.where(
-        abc_analysis['avg_qty'] > 0,
-        abc_analysis['std_qty'] / abc_analysis['avg_qty'],
-        999  # Велике значення для товарів без продажів
-    )
-
-    def get_xyz_category(cv):
-        if cv <= 0.1: return 'X'  # Стабільний попит
-        elif cv <= 0.25: return 'Y'  # Помірно мінливий
-        else: return 'Z'  # Нестабільний попит
-
-    abc_analysis['xyz_category'] = abc_analysis['coefficient_variation'].apply(get_xyz_category)
-
-    return abc_analysis
-
-def calculate_features(weekly, df):
-    def compute_features(group):
-        sorted_group = group.sort_values('year_week')
-        qty_series = sorted_group['Qty'].values
+    st.success(f"✅ Загружено: {len(df):,} строк, {df['Magazin'].nunique()} магазинов, {df['Art'].nunique():,} артикулов")
+    
+    # Проверка колонок
+    required_cols = ['Magazin', 'Segment', 'Sum']
+    if not all(col in df.columns for col in required_cols):
+        st.error(f"❌ Файл должен содержать колонки: {required_cols}")
+        st.stop()
+    
+    # --- БЛОК 1: АНАЛИЗ СЕГМЕНТОВ ---
+    st.header("1️⃣ Анализ товарных сегментов")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Структура оборота по сегментам")
+        segment_sales = df.groupby('Segment')['Sum'].sum().sort_values(ascending=False)
+        segment_pct = (segment_sales / segment_sales.sum() * 100).round(2)
         
-        if len(qty_series) == 0:
-            return pd.Series({
-                'ma_3': 0, 
-                'ma_6': 0, 
-                'consecutive_zeros': 0,
-                'zero_weeks_12': 0, 
-                'trend': 0
-            })
-
-
-        # Ковзні середні
-        qty_series_pd = pd.Series(qty_series)
-        ma_3 = qty_series_pd.rolling(3, min_periods=1).mean().iloc[-1]
-        ma_6 = qty_series_pd.rolling(6, min_periods=1).mean().iloc[-1]
-
-        # Послідовні нулі з кінця
-        consecutive_zeros = 0
-        for val in reversed(qty_series):
-            if val == 0:
-                consecutive_zeros += 1
-            else:
-                break
-
-        # Нулі за останні 12 тижнів
-        zero_weeks_12 = int(np.sum(qty_series[-12:] == 0)) if len(qty_series) >= 12 else int(np.sum(qty_series == 0))
-
-        # Тренд
-        trend = 0
-        if len(qty_series) >= 4:
-            try:
-                x = np.arange(len(qty_series))
-                coeffs = np.polyfit(x, qty_series, 1)
-                trend = float(coeffs[0])
-            except:
-                trend = 0
-        
-        return pd.Series({
-            'ma_3': float(ma_3), 
-            'ma_6': float(ma_6), 
-            'consecutive_zeros': int(consecutive_zeros),
-            'zero_weeks_12': int(zero_weeks_12), 
-            'trend': float(trend)
+        segment_df = pd.DataFrame({
+            'Сегмент': segment_sales.index,
+            'Оборот, ₴': segment_sales.values,
+            'Доля, %': segment_pct.values
         })
+        st.dataframe(segment_df, use_container_width=True, hide_index=True)
     
-    # Застосовуємо функцію і отримуємо DataFrame з Art в індексі
-    features = weekly.groupby('Art').apply(compute_features, include_groups=False).reset_index()
-
-    # Розрахунок частки магазинів без продажів
-    total_stores = df['Magazin'].nunique()
-
-    if total_stores == 0:
-        st.error("❌ Не знайдено магазинів в даних")
+    with col2:
+        st.subheader("Распределение оборота")
+        fig_pie = px.pie(segment_df, values='Оборот, ₴', names='Сегмент', 
+                         hole=0.4, color_discrete_sequence=px.colors.qualitative.Set3)
+        st.plotly_chart(fig_pie, use_container_width=True)
+    
+    # --- БЛОК 2: ПОСТРОЕНИЕ МАТРИЦЫ ---
+    st.header("2️⃣ Матрица магазин × сегмент")
+    
+    # Агрегируем продажи по магазинам и сегментам
+    pivot = df.groupby(['Magazin', 'Segment'])['Sum'].sum().reset_index()
+    pivot_table = pivot.pivot(index='Magazin', columns='Segment', values='Sum').fillna(0)
+    
+    # Вычисляем доли сегментов для каждого магазина
+    pivot_pct = pivot_table.div(pivot_table.sum(axis=1), axis=0) * 100
+    
+    # Проверка на достаточное количество магазинов
+    n_stores = len(pivot_pct)
+    if n_stores < 3:
+        st.error(f"❌ Недостаточно магазинов для кластеризации: {n_stores}. Минимум: 3")
         st.stop()
-
-    # Магазини з продажами для кожного артикула
-    stores_with_sales = df[df['Qty'] > 0].groupby('Art')['Magazin'].nunique().reset_index()
-    stores_with_sales.columns = ['Art', 'stores_with_sales']
-    stores_with_sales['no_store_ratio'] = 1 - (stores_with_sales['stores_with_sales'] / total_stores)
-
-    features = features.merge(stores_with_sales[['Art', 'no_store_ratio']], on='Art', how='left')
-    features['no_store_ratio'] = features['no_store_ratio'].fillna(1.0)
-
-    return features
-
-def create_ml_model(features, abc_analysis):
-    # Створення міток для навчання (ВИПРАВЛЕНА ЛОГІКА)
-    def create_labels(row):
-        score = 0
-
-        # Категорія C - агресивні критерії
-        if row['abc_category'] == 'C':
-            if row['consecutive_zeros'] >= zero_weeks_threshold:
-                score += 3
-            elif row['zero_weeks_12'] >= zero_weeks_threshold // 2:
-                score += 2
-
-            if row['no_store_ratio'] > max_store_ratio:
-                score += 2
-
-            if row['total_qty'] < min_total_sales:
-                score += 2
-
-            if row['trend'] < -0.1:
-                score += 1
-
-        # Категорія B - помірні критерії (ВИПРАВЛЕНО)
-        elif row['abc_category'] == 'B':
-            if row['consecutive_zeros'] >= zero_weeks_threshold * 2:  # 24 тижні
-                score += 3
-            elif row['consecutive_zeros'] >= zero_weeks_threshold:  # 12 тижнів
-                score += 2
-
-            if row['no_store_ratio'] > max_store_ratio:  # 85%
-                score += 2
-
-            if row['total_qty'] < min_total_sales * 2:  # 10 одиниць
-                score += 1
-
-            if row['trend'] < -0.1:
-                score += 1
-
-        # Категорія A - тільки критичні випадки
-        elif row['abc_category'] == 'A':
-            if row['consecutive_zeros'] >= zero_weeks_threshold * 3:  # 36 тижнів
-                score += 2
-            if row['no_store_ratio'] > 0.95:  # 95%
-                score += 1
-
-        # Критичні випадки для БУДЬ-ЯКОЇ категорії
-        if row['consecutive_zeros'] >= zero_weeks_threshold * 2 and row['no_store_ratio'] > max_store_ratio:
-            score += 2  # Посилення для комбінації факторів
-
-        return 1 if score >= 4 else 0
-
-    # Об'єднання даних
-    final_features = features.merge(
-        abc_analysis[['Art', 'total_qty', 'abc_category', 'last_sale']],
-        on='Art',
-        how='left'
-    )
-    final_features['label'] = final_features.apply(create_labels, axis=1)
-
-    # Навчання моделі
-    feature_cols = ['ma_3', 'ma_6', 'consecutive_zeros', 'zero_weeks_12', 'trend', 'no_store_ratio', 'total_qty']
-    X = final_features[feature_cols].fillna(0)
-    y = final_features['label']
     
-    st.write(f"**Розподіл:** Зняти: {y.sum()}, Залишити: {len(y) - y.sum()}")
-
-    # Перевірка можливості навчання (покращено: мінімум 2 зразки в кожному класі)
-    if len(y.unique()) > 1 and y.sum() >= 2 and len(y) - y.sum() >= 2:
-        try:
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y,
-                stratify=y,
-                random_state=42,
-                test_size=0.3
-            )
-
-            clf = RandomForestClassifier(
-                n_estimators=30,
-                random_state=42,
-                class_weight='balanced' if use_balanced_model else None,
-                max_depth=8,
-                min_samples_split=5,
-                n_jobs=1
-            )
-
-            clf.fit(X_train, y_train)
-            final_features['prob_dying'] = clf.predict_proba(X)[:, 1] * 100
-            test_score = clf.score(X_test, y_test)
-
-        except Exception as e:
-            st.warning(f"⚠️ Помилка ML: {e}. Використовуємо просту логіку.")
-            final_features['prob_dying'] = final_features['label'].astype(float) * 100
-            test_score = 0.0
+    st.subheader("Доля сегментов в обороте каждого магазина (%)")
+    st.dataframe(pivot_pct.round(2).style.background_gradient(cmap='RdYlGn', axis=None), 
+                 use_container_width=True)
+    
+    # Стандартизация данных (используется во всех последующих блоках)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(pivot_pct)
+    
+    # --- БЛОК 3: ПОДБОР ОПТИМАЛЬНОГО КОЛИЧЕСТВА КЛАСТЕРОВ ---
+    st.header("3️⃣ Подбор оптимального количества кластеров")
+    
+    with st.expander("⚙️ Настройки анализа", expanded=False):
+        col_s1, col_s2, col_s3 = st.columns(3)
+        with col_s1:
+            min_k = st.number_input("Min кластеров", min_value=2, max_value=min(10, n_stores-1), value=2)
+        with col_s2:
+            max_k = st.number_input("Max кластеров", min_value=2, max_value=min(15, n_stores-1), value=min(10, n_stores-1))
+        with col_s3:
+            init_method = st.selectbox("Метод инициализации", ['k-means++', 'random'], index=0)
+    
+    # Вычисляем метрики для разного количества кластеров
+    k_range = range(min_k, max_k + 1)
+    
+    silhouette_scores = []
+    davies_bouldin_scores = []
+    calinski_harabasz_scores = []
+    inertias = []
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i, k in enumerate(k_range):
+        status_text.text(f"Анализ {k} кластеров...")
+        kmeans_temp = KMeans(n_clusters=k, random_state=42, init=init_method, n_init=10)
+        labels_temp = kmeans_temp.fit_predict(X_scaled)
+        
+        silhouette_scores.append(silhouette_score(X_scaled, labels_temp))
+        davies_bouldin_scores.append(davies_bouldin_score(X_scaled, labels_temp))
+        calinski_harabasz_scores.append(calinski_harabasz_score(X_scaled, labels_temp))
+        inertias.append(kmeans_temp.inertia_)
+        
+        progress_bar.progress((i + 1) / len(k_range))
+    
+    progress_bar.empty()
+    status_text.empty()
+    
+    # Оптимальное количество кластеров
+    optimal_k_silhouette = k_range[np.argmax(silhouette_scores)]
+    optimal_k_davies = k_range[np.argmin(davies_bouldin_scores)]
+    optimal_k_calinski = k_range[np.argmax(calinski_harabasz_scores)]
+    
+    # Elbow method - находим точку максимального изгиба (максимальное абсолютное изменение)
+    if len(inertias) > 2:
+        inertia_diffs = np.abs(np.diff(inertias))
+        optimal_k_elbow_idx = np.argmax(inertia_diffs)
+        optimal_k_elbow = list(k_range)[optimal_k_elbow_idx]
     else:
-        st.warning("⚠️ Недостатньо даних для ML. Використовуємо просту логіку.")
-        final_features['prob_dying'] = final_features['label'].astype(float) * 100
-        test_score = 0.0
-
-    return final_features, test_score
-
-def create_prophet_forecasts(df, abc_analysis):
-    if not PROPHET_AVAILABLE:
-        return pd.DataFrame()
+        optimal_k_elbow = min_k + 1
     
-    try:
-        with st.spinner("📈 Прогнози Prophet..."):
-            top_arts = abc_analysis.nlargest(TOP_N, 'total_qty')['Art']
-            forecasts = []
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("🏆 Silhouette", f"k={optimal_k_silhouette}", 
+                  help="Максимальная разделимость кластеров")
+    with col2:
+        st.metric("🏆 Davies-Bouldin", f"k={optimal_k_davies}", 
+                  help="Минимальное внутрикластерное расстояние")
+    with col3:
+        st.metric("🏆 Calinski-Harabasz", f"k={optimal_k_calinski}", 
+                  help="Максимальная дисперсия между кластерами")
+    with col4:
+        st.metric("🏆 Elbow Method", f"k={optimal_k_elbow}", 
+                  help="Точка максимального изгиба")
+    
+    # Графики метрик
+    col_g1, col_g2 = st.columns(2)
+    
+    with col_g1:
+        # Silhouette & Davies-Bouldin
+        fig_metrics1 = go.Figure()
+        fig_metrics1.add_trace(go.Scatter(
+            x=list(k_range), y=silhouette_scores, mode='lines+markers',
+            name='Silhouette (↑ лучше)', line=dict(color='green', width=3),
+            marker=dict(size=8)
+        ))
+        fig_metrics1.add_trace(go.Scatter(
+            x=list(k_range), y=davies_bouldin_scores, mode='lines+markers',
+            name='Davies-Bouldin (↓ лучше)', line=dict(color='red', width=3),
+            marker=dict(size=8), yaxis='y2'
+        ))
+        fig_metrics1.update_layout(
+            title="Метрики качества кластеризации",
+            xaxis_title="Количество кластеров",
+            yaxis_title="Silhouette Score",
+            yaxis2=dict(title="Davies-Bouldin Index", overlaying='y', side='right'),
+            hovermode='x unified',
+            height=400
+        )
+        st.plotly_chart(fig_metrics1, use_container_width=True)
+    
+    with col_g2:
+        # Elbow method
+        fig_elbow = go.Figure()
+        fig_elbow.add_trace(go.Scatter(
+            x=list(k_range), y=inertias, mode='lines+markers',
+            name='Inertia', line=dict(color='blue', width=3),
+            marker=dict(size=10, color=inertias, colorscale='Viridis', showscale=True)
+        ))
+        fig_elbow.add_vline(x=optimal_k_elbow, line_dash="dash", line_color="red",
+                           annotation_text=f"Оптимум: k={optimal_k_elbow}")
+        fig_elbow.update_layout(
+            title="Elbow Method (метод локтя)",
+            xaxis_title="Количество кластеров",
+            yaxis_title="Inertia (сумма квадратов расстояний)",
+            hovermode='x unified',
+            height=400
+        )
+        st.plotly_chart(fig_elbow, use_container_width=True)
+    
+    # Таблица всех метрик
+    with st.expander("📊 Детальная таблица метрик"):
+        metrics_df = pd.DataFrame({
+            'K': list(k_range),
+            'Silhouette': [f"{x:.4f}" for x in silhouette_scores],
+            'Davies-Bouldin': [f"{x:.4f}" for x in davies_bouldin_scores],
+            'Calinski-Harabasz': [f"{x:.0f}" for x in calinski_harabasz_scores],
+            'Inertia': [f"{x:.2f}" for x in inertias]
+        })
+        st.dataframe(metrics_df, use_container_width=True, hide_index=True)
+    
+    # ИСПРАВЛЕНО: правильная индексация
+    silhouette_optimal_idx = optimal_k_silhouette - min_k
+    st.info(f"""
+    **Рекомендация:** Оптимальное количество кластеров — **{optimal_k_silhouette}** 
+    (по Silhouette Score: {silhouette_scores[silhouette_optimal_idx]:.3f})
+    """)
+    
+    # --- БЛОК 4: КЛАСТЕРИЗАЦИЯ ---
+    st.header("4️⃣ Кластеризация магазинов")
+    
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    
+    with col1:
+        n_clusters = st.slider("Количество кластеров", min_value=2, max_value=min(10, n_stores-1), value=optimal_k_silhouette)
+    
+    with col2:
+        random_state = st.number_input("Random state", value=42, min_value=0)
+    
+    with col3:
+        max_iter = st.number_input("Max iterations", value=300, min_value=100, max_value=1000, step=100)
+    
+    with col4:
+        distance_metric = st.selectbox("Расстояние", ['euclidean', 'manhattan'], 
+                                       help="Метрика расстояния между точками")
+    
+    # Кластеризация
+    # ИСПРАВЛЕНО: раздельная обработка для разных алгоритмов
+    if distance_metric == 'euclidean':
+        kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, 
+                       init=init_method, n_init=10, max_iter=max_iter)
+        clusters = kmeans.fit_predict(X_scaled)
+        has_inertia = True
+    else:
+        # Для Manhattan используем иерархическую кластеризацию
+        from sklearn.cluster import AgglomerativeClustering
+        kmeans = AgglomerativeClustering(n_clusters=n_clusters, metric='manhattan', linkage='average')
+        clusters = kmeans.fit_predict(X_scaled)
+        has_inertia = False
+    
+    # Метрики качества
+    silhouette = silhouette_score(X_scaled, clusters)
+    davies_bouldin = davies_bouldin_score(X_scaled, clusters)
+    calinski_harabasz = calinski_harabasz_score(X_scaled, clusters)
+    
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    with col_m1:
+        st.metric("Silhouette Score", f"{silhouette:.3f}", 
+                  help="0.5-0.7: хорошо, >0.7: отлично")
+    with col_m2:
+        st.metric("Davies-Bouldin", f"{davies_bouldin:.3f}",
+                  help="Чем меньше, тем лучше. <1.0: отлично")
+    with col_m3:
+        st.metric("Calinski-Harabasz", f"{calinski_harabasz:.0f}",
+                  help="Чем больше, тем лучше")
+    with col_m4:
+        # ИСПРАВЛЕНО: корректная проверка наличия inertia
+        if has_inertia:
+            st.metric("Inertia", f"{kmeans.inertia_:.2f}",
+                      help="Сумма квадратов расстояний")
+        else:
+            st.metric("Метод", "Agglomerative", help="Иерархическая кластеризация")
+    
+    # Добавляем кластеры в данные
+    # ИСПРАВЛЕНО: создаем копию для избежания проблем с индексацией
+    pivot_pct_clustered = pivot_pct.copy()
+    pivot_pct_clustered['Кластер'] = clusters
+    pivot_pct_clustered = pivot_pct_clustered.sort_values('Кластер')
+    
+    # --- БЛОК 5: ВИЗУАЛИЗАЦИЯ КЛАСТЕРОВ В 2D (PCA) ---
+    st.subheader("Визуализация кластеров в 2D (PCA)")
+    
+    col_v1, col_v2 = st.columns([2, 1])
+    
+    with col_v1:
+        # PCA для визуализации
+        pca = PCA(n_components=2)
+        X_pca = pca.fit_transform(X_scaled)
+        
+        pca_df = pd.DataFrame({
+            'PC1': X_pca[:, 0],
+            'PC2': X_pca[:, 1],
+            'Кластер': [f"Кластер {c}" for c in clusters],
+            'Магазин': pivot_pct.index
+        })
+        
+        fig_pca = px.scatter(
+            pca_df, x='PC1', y='PC2', color='Кластер',
+            hover_data=['Магазин'],
+            title=f"Кластеры в пространстве главных компонент (объясненная дисперсия: {pca.explained_variance_ratio_.sum():.1%})",
+            color_discrete_sequence=px.colors.qualitative.Set2
+        )
+        fig_pca.update_traces(marker=dict(size=12, line=dict(width=2, color='white')))
+        fig_pca.update_layout(height=500)
+        st.plotly_chart(fig_pca, use_container_width=True)
+    
+    with col_v2:
+        st.markdown("**Объясненная дисперсия:**")
+        variance_df = pd.DataFrame({
+            'Компонента': ['PC1', 'PC2'],
+            'Дисперсия, %': [f"{x*100:.1f}%" for x in pca.explained_variance_ratio_]
+        })
+        st.dataframe(variance_df, use_container_width=True, hide_index=True)
+        
+        st.markdown("**Интерпретация:**")
+        st.markdown(f"""
+        - PC1: {pca.explained_variance_ratio_[0]*100:.1f}% вариации
+        - PC2: {pca.explained_variance_ratio_[1]*100:.1f}% вариации
+        - Близкие точки = похожие магазины
+        """)
+    
+    # --- БЛОК 6: ПРОФИЛИ КЛАСТЕРОВ ---
+    st.subheader("Профили кластеров")
+    
+    # ИСПРАВЛЕНО: используем копию без колонки Оборот
+    cluster_profiles = pivot_pct_clustered.drop(columns=['Кластер'], errors='ignore').groupby(pivot_pct_clustered['Кластер']).mean()
+    
+    # Тепловая карта
+    fig_heatmap = px.imshow(
+        cluster_profiles.T, 
+        labels=dict(x="Кластер", y="Сегмент", color="Доля, %"),
+        x=[f"Кластер {i}" for i in range(n_clusters)],
+        y=cluster_profiles.columns,
+        color_continuous_scale='RdYlGn',
+        aspect="auto"
+    )
+    fig_heatmap.update_layout(height=400)
+    st.plotly_chart(fig_heatmap, use_container_width=True)
+    
+    # --- БЛОК 7: СТАТИСТИКА ПО КЛАСТЕРАМ ---
+    st.header("7️⃣ Характеристика кластеров")
+    
+    # Добавляем оборот магазинов
+    store_totals = df.groupby('Magazin')['Sum'].sum()
+    pivot_pct_clustered['Оборот_магазина'] = pivot_pct_clustered.index.map(store_totals)
+    
+    for cluster_id in range(n_clusters):
+        with st.expander(f"**Кластер {cluster_id}** ({(clusters == cluster_id).sum()} магазинов)", expanded=True):
+            cluster_data = pivot_pct_clustered[pivot_pct_clustered['Кластер'] == cluster_id]
             
-            for art in top_arts:
-                try:
-                    sales = df[df['Art'] == art].groupby('Data')['Qty'].sum().reset_index()
-                    if len(sales) < 8: 
-                        continue
-                    
-                    sales.columns = ['ds', 'y']
-                    
-                    model = Prophet(
-                        daily_seasonality=False, 
-                        weekly_seasonality=False, 
-                        yearly_seasonality=False,
-                        changepoint_prior_scale=0.05
-                    )
-                    
-                    with warnings.catch_warnings():
-                        warnings.simplefilter("ignore")
-                        model.fit(sales)
-                        future = model.make_future_dataframe(periods=30)
-                        forecast = model.predict(future)
-                    
-                    median_30 = max(0, forecast.tail(30)['yhat'].median())
-                    forecasts.append({'Art': art, 'forecast_30_median': float(median_30)})
-                    
-                except Exception as e:
-                    continue
+            col1, col2 = st.columns([2, 1])
             
-            return pd.DataFrame(forecasts)
+            with col1:
+                st.markdown("**Магазины в кластере:**")
+                stores_list = cluster_data.index.tolist()
+                st.write(", ".join(stores_list))
             
-    except Exception as e:
-        st.warning(f"⚠️ Помилка Prophet: {e}")
-        return pd.DataFrame()
-
-def get_recommendations(row):
-    # Формування причин
-    reasons = []
-
-    if row['abc_category'] == 'C':
-        reasons.append("Категорія C")
-    elif row['abc_category'] == 'B':
-        reasons.append("Категорія B")
-
-    if row['consecutive_zeros'] >= zero_weeks_threshold * 2:
-        reasons.append(f"Без продажів {int(row['consecutive_zeros'])} тижнів (критично!)")
-    elif row['consecutive_zeros'] >= zero_weeks_threshold:
-        reasons.append(f"Без продажів {int(row['consecutive_zeros'])} тижнів")
-
-    if row['zero_weeks_12'] >= zero_weeks_threshold // 2:
-        reasons.append(f"З 12 тижнів {int(row['zero_weeks_12'])} без продажів")
-
-    if row['no_store_ratio'] > max_store_ratio:
-        stores_with_sales_pct = (1 - row['no_store_ratio']) * 100
-        reasons.append(f"Продажі в {stores_with_sales_pct:.0f}% магазинів")
-
-    if row['total_qty'] < min_total_sales:
-        reasons.append(f"Малий обсяг ({row['total_qty']:.1f})")
-    elif row['total_qty'] < min_total_sales * 2:
-        reasons.append(f"Низький обсяг ({row['total_qty']:.1f})")
-
-    if row['trend'] < -0.1:
-        reasons.append("Негативний тренд")
-
-    # Додаємо дату останнього продажу
-    if pd.notnull(row.get('last_sale')):
-        last_sale_str = row['last_sale'].strftime('%Y-%m-%d')
-        reasons.append(f"Останній продаж: {last_sale_str}")
-
-    reason = "; ".join(reasons) if reasons else "Стабільні продажі"
-
-    # КРИТИЧНІ ВИПАДКИ - перевизначення незалежно від ML
-    # 1. Екстремально тривала відсутність продажів
-    if row['consecutive_zeros'] >= zero_weeks_threshold * 3:  # 36 тижнів
-        return reason, "🚫 Зняти"
-
-    # 2. Категорія C з перевищенням всіх порогів
-    if (row['abc_category'] == 'C' and
-        row['consecutive_zeros'] >= zero_weeks_threshold and
-        row['total_qty'] < min_total_sales and
-        row['no_store_ratio'] > max_store_ratio):
-        return reason, "🚫 Зняти"
-
-    # 3. Категорія B з критичними показниками
-    if (row['abc_category'] == 'B' and
-        row['consecutive_zeros'] >= zero_weeks_threshold * 2 and
-        row['no_store_ratio'] > max_store_ratio):
-        return reason, "🚫 Зняти"
-
-    # 4. Тривала відсутність + низьке поширення для B
-    if (row['abc_category'] == 'B' and
-        row['consecutive_zeros'] >= zero_weeks_threshold * 1.5 and
-        row['no_store_ratio'] > 0.85 and
-        row['total_qty'] < min_total_sales * 2):
-        return reason, "⚠️ Спостерігати"
-
-    # Стандартна логіка на основі ML
-    prob_threshold_pct = final_threshold * 100
-
-    if row['prob_dying'] > prob_threshold_pct:
-        return reason, "🚫 Зняти"
-    elif row['prob_dying'] > prob_threshold_pct * 0.7:
-        return reason, "⚠️ Спостерігати"
-
-    # Додаткові перевірки для "Спостерігати"
-    if (row['consecutive_zeros'] >= zero_weeks_threshold and
-        row['no_store_ratio'] > 0.75):
-        return reason, "⚠️ Спостерігати"
-
-    return reason, "✅ Залишити"
-
-# Виконання аналізу
-df, weekly, all_arts, unique_weeks = process_data(df)
-abc_analysis = calculate_abc_xyz_analysis(df)
-features = calculate_features(weekly, df)
-final_features, test_score = create_ml_model(features, abc_analysis)
-forecast_df = create_prophet_forecasts(df, abc_analysis)
-
-# Фінальна таблиця
-final = final_features.merge(abc_analysis[['Art', 'xyz_category', 'last_sale']], on='Art', how='left')
-
-# Перевірка перед мерджем forecast_df
-if not forecast_df.empty:
-    final = final.merge(forecast_df, on='Art', how='left')
-
-# Обробка пустих Name
-final = final.merge(df[['Art', 'Name']].drop_duplicates(), on='Art', how='left')
-final['Name'] = final['Name'].fillna('Без назви')
-
-# Отримання рекомендацій
-recommendations = final.apply(get_recommendations, axis=1)
-final['Причина'] = [rec[0] for rec in recommendations]
-final['Рекомендація'] = [rec[1] for rec in recommendations]
-
-# === РЕЗУЛЬТАТИ ===
-st.header("📊 Результати аналізу")
-
-total_products = len(final)
-candidates_remove = len(final[final['Рекомендація'] == "🚫 Зняти"])
-candidates_watch = len(final[final['Рекомендація'] == "⚠️ Спостерігати"])
-candidates_keep = len(final[final['Рекомендація'] == "✅ Залишити"])
-
-col1, col2, col3, col4 = st.columns(4)
-with col1: st.metric("Всього товарів", total_products)
-with col2: st.metric("До зняття", candidates_remove, f"{candidates_remove/total_products*100:.1f}%")
-with col3: st.metric("Спостерігати", candidates_watch, f"{candidates_watch/total_products*100:.1f}%")
-with col4: st.metric("Точність моделі", f"{test_score:.2f}" if test_score > 0 else "N/A")
-
-# ABC/XYZ розподіл
-st.subheader("📈 ABC/XYZ аналіз")
-abc_dist = final['abc_category'].value_counts()
-xyz_dist = final['xyz_category'].value_counts()
-
-col1, col2 = st.columns(2)
-with col1:
-    st.write("**ABC категорії:**")
-    st.write(f"A: {abc_dist.get('A', 0)}, B: {abc_dist.get('B', 0)}, C: {abc_dist.get('C', 0)}")
-with col2:
-    st.write("**XYZ категорії:**")
-    st.write(f"X: {xyz_dist.get('X', 0)}, Y: {xyz_dist.get('Y', 0)}, Z: {xyz_dist.get('Z', 0)}")
-
-# === НОВИЙ РОЗДІЛ: СТАТИСТИКА ДЛЯ ПРОДАЖІВ ТА МАРКЕТИНГУ ===
-st.header("📈 Аналітика для відділу продажів та маркетингу")
-
-# Розрахунок додаткових метрик
-total_sales_volume = final['total_qty'].sum()
-remove_sales_volume = final[final['Рекомендація'] == "🚫 Зняти"]['total_qty'].sum()
-watch_sales_volume = final[final['Рекомендація'] == "⚠️ Спостерігати"]['total_qty'].sum()
-keep_sales_volume = final[final['Рекомендація'] == "✅ Залишити"]['total_qty'].sum()
-
-# 1. Зведена таблиця за рекомендаціями та ABC
-st.subheader("📊 Зведена таблиця: Рекомендації × ABC категорії")
-
-summary_pivot = pd.crosstab(
-    final['Рекомендація'],
-    final['abc_category'],
-    values=final['total_qty'],
-    aggfunc='sum',
-    margins=True,
-    margins_name='Разом'
-).fillna(0).astype(int)
-
-st.dataframe(summary_pivot.style.format("{:,}"), use_container_width=True)
-
-# 2. Таблиця з ключовими метриками
-st.subheader("💼 Ключові бізнес-метрики")
-
-metrics_data = {
-    'Категорія': ['🚫 Зняти', '⚠️ Спостерігати', '✅ Залишити', '**РАЗОМ**'],
-    'Кількість товарів': [candidates_remove, candidates_watch, candidates_keep, total_products],
-    '% від асортименту': [
-        f"{candidates_remove/total_products*100:.1f}%",
-        f"{candidates_watch/total_products*100:.1f}%",
-        f"{candidates_keep/total_products*100:.1f}%",
-        "100%"
-    ],
-    'Обсяг продажів (од.)': [
-        f"{remove_sales_volume:,.0f}",
-        f"{watch_sales_volume:,.0f}",
-        f"{keep_sales_volume:,.0f}",
-        f"{total_sales_volume:,.0f}"
-    ],
-    '% від обороту': [
-        f"{remove_sales_volume/total_sales_volume*100:.1f}%",
-        f"{watch_sales_volume/total_sales_volume*100:.1f}%",
-        f"{keep_sales_volume/total_sales_volume*100:.1f}%",
-        "100%"
-    ]
-}
-
-metrics_df = pd.DataFrame(metrics_data)
-st.dataframe(metrics_df, use_container_width=True, hide_index=True)
-
-# 3. Топ-20 товарів до зняття
-st.subheader("🔴 Топ-20 товарів до зняття (за обсягом продажів)")
-
-remove_candidates = final[final['Рекомендація'] == "🚫 Зняти"].nlargest(20, 'total_qty')
-remove_display = remove_candidates[['Art', 'Name', 'abc_category', 'total_qty', 'consecutive_zeros', 'no_store_ratio', 'Причина']].copy()
-remove_display['no_store_ratio'] = (remove_display['no_store_ratio'] * 100).round(1).astype(str) + '%'
-remove_display.columns = ['Артикул', 'Назва', 'ABC', 'Обсяг продажів', 'Тижнів без продажів', 'Магазинів без продажів', 'Причина']
-
-st.dataframe(remove_display, use_container_width=True, hide_index=True)
-
-# 4. Товари під спостереженням
-st.subheader("🟡 Топ-20 товарів під спостереженням")
-
-watch_candidates = final[final['Рекомендація'] == "⚠️ Спостерігати"].nlargest(20, 'total_qty')
-watch_display = watch_candidates[['Art', 'Name', 'abc_category', 'total_qty', 'consecutive_zeros', 'prob_dying', 'Причина']].copy()
-watch_display['prob_dying'] = watch_display['prob_dying'].round(1).astype(str) + '%'
-watch_display.columns = ['Артикул', 'Назва', 'ABC', 'Обсяг продажів', 'Тижнів без продажів', 'Ризик зняття', 'Причина']
-
-st.dataframe(watch_display, use_container_width=True, hide_index=True)
-
-# 5. Статистика по магазинах
-st.subheader("🏪 Розподіл продажів по магазинах")
-
-store_stats = df.groupby('Magazin').agg({
-    'Art': 'nunique',
-    'Qty': 'sum'
-}).reset_index()
-store_stats.columns = ['Магазин', 'Унікальних товарів', 'Обсяг продажів']
-store_stats = store_stats.sort_values('Обсяг продажів', ascending=False)
-
-col1, col2 = st.columns([2, 1])
-with col1:
-    st.dataframe(store_stats, use_container_width=True, hide_index=True)
-with col2:
-    st.metric("Всього магазинів", len(store_stats))
-    st.metric("Середній оборот", f"{store_stats['Обсяг продажів'].mean():,.0f} од.")
-
-# === ФІЛЬТРИ І ТАБЛИЦЯ ===
-st.subheader("🔍 Фільтри")
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    filter_recommendation = st.selectbox("Рекомендація:", ["Всі", "🚫 Зняти", "⚠️ Спостерігати", "✅ Залишити"])
-    filter_abc = st.selectbox("ABC:", ["Всі", "A", "B", "C"])
-with col2:
-    min_prob = st.slider("Мін. ймовірність (%)", 0, 100, 0)
-    filter_xyz = st.selectbox("XYZ:", ["Всі", "X", "Y", "Z"])
-with col3:
-    min_zero_weeks = st.slider("Мін. тижнів без продажів", 0, 20, 0)
-    search_art = st.text_input("Пошук артикула/назви")
-
-# Застосування фільтрів
-filtered_df = final.copy()
-if filter_recommendation != "Всі":
-    filtered_df = filtered_df[filtered_df['Рекомендація'] == filter_recommendation]
-if filter_abc != "Всі":
-    filtered_df = filtered_df[filtered_df['abc_category'] == filter_abc]
-if filter_xyz != "Всі":
-    filtered_df = filtered_df[filtered_df['xyz_category'] == filter_xyz]
-
-filtered_df = filtered_df[
-    (filtered_df['prob_dying'] >= min_prob) &
-    (filtered_df['consecutive_zeros'] >= min_zero_weeks)
-]
-
-if search_art:
-    mask = (filtered_df['Art'].astype(str).str.contains(search_art, case=False, na=False) |
-            filtered_df['Name'].astype(str).str.contains(search_art, case=False, na=False))
-    filtered_df = filtered_df[mask]
-
-# Таблиця результатів
-st.subheader(f"📋 Результати ({len(filtered_df)} товарів)")
-
-display_columns = ['Art', 'Name', 'abc_category', 'xyz_category', 'total_qty', 'consecutive_zeros', 'no_store_ratio', 'prob_dying', 'Причина', 'Рекомендація']
-if 'forecast_30_median' in filtered_df.columns:
-    display_columns.insert(-2, 'forecast_30_median')
-
-display_df = filtered_df[display_columns].copy()
-display_df['no_store_ratio'] = (display_df['no_store_ratio'] * 100).round(1)
-display_df['prob_dying'] = display_df['prob_dying'].round(1)
-
-column_names = ['Артикул', 'Назва', 'ABC', 'XYZ', 'Обсяг', 'Тижнів_без_продажів', 'Магазини_без_продажів_%', 'Ймовірність_зняття_%']
-if 'forecast_30_median' in display_df.columns:
-    column_names.append('Прогноз_30дн')
-column_names.extend(['Причина', 'Рекомендація'])
-
-display_df.columns = column_names
-st.dataframe(display_df, use_container_width=True)
-
-# === ЕКСПОРТ ===
-st.subheader("💾 Експорт")
-if st.button("📥 Підготувати Excel"):
-    try:
-        buffer = BytesIO()
-        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            output_cols = ['Art', 'Name', 'abc_category', 'xyz_category', 'total_qty', 'consecutive_zeros', 'no_store_ratio', 'prob_dying', 'Причина', 'Рекомендація']
-            if 'forecast_30_median' in final.columns:
-                output_cols.insert(-2, 'forecast_30_median')
-
-            final[output_cols].to_excel(writer, sheet_name='Результати', index=False)
-
-            stats = pd.DataFrame({
-                'Метрика': ['Всього', 'Зняти', 'Спостерігати', 'Залишити', 'Поріг_ML_%'],
-                'Значення': [total_products, candidates_remove, candidates_watch,
-                           total_products - candidates_remove - candidates_watch, final_threshold*100]
+            with col2:
+                total_revenue = cluster_data['Оборот_магазина'].sum()
+                st.metric("Суммарный оборот", f"{total_revenue:,.0f} ₴")
+            
+            st.markdown("**Средний профиль кластера (доля сегментов, %):**")
+            
+            # Средние доли сегментов
+            profile = cluster_data.drop(['Кластер', 'Оборот_магазина'], axis=1).mean().sort_values(ascending=False)
+            
+            profile_df = pd.DataFrame({
+                'Сегмент': profile.index,
+                'Средняя доля, %': profile.values.round(2)
             })
-            stats.to_excel(writer, sheet_name='Статистика', index=False)
+            
+            col_a, col_b = st.columns([1, 1])
+            with col_a:
+                st.dataframe(profile_df, use_container_width=True, hide_index=True)
+            
+            with col_b:
+                fig_bar = px.bar(profile_df, x='Средняя доля, %', y='Сегмент', 
+                                orientation='h', color='Средняя доля, %',
+                                color_continuous_scale='Viridis')
+                fig_bar.update_layout(showlegend=False, height=250, margin=dict(l=0, r=0, t=10, b=0))
+                st.plotly_chart(fig_bar, use_container_width=True)
+            
+            st.markdown("---")
+    
+    # --- БЛОК 8: ИЕРАРХИЧЕСКАЯ КЛАСТЕРИЗАЦИЯ (ДЕНДРОГРАММА) ---
+    st.header("8️⃣ Дендрограмма (иерархическая кластеризация)")
+    
+    with st.expander("📊 Показать дендрограмму", expanded=False):
+        linkage_method = st.selectbox("Метод связи", ['ward', 'average', 'complete', 'single'])
+        
+        # Вычисляем linkage matrix
+        Z = linkage(X_scaled, method=linkage_method)
+        
+        # Создаем дендрограмму
+        fig_dendr = go.Figure()
+        
+        dendr = dendrogram(Z, labels=pivot_pct.index.tolist(), no_plot=True)
+        
+        icoord = np.array(dendr['icoord'])
+        dcoord = np.array(dendr['dcoord'])
+        
+        for i in range(len(icoord)):
+            fig_dendr.add_trace(go.Scatter(
+                x=icoord[i], y=dcoord[i],
+                mode='lines',
+                line=dict(color='rgb(100,100,100)', width=1),
+                hoverinfo='skip',
+                showlegend=False
+            ))
+        
+        # ИСПРАВЛЕНО: правильные позиции для меток
+        leaves_positions = dendr['leaves']
+        leaves_labels = [pivot_pct.index[i] for i in leaves_positions]
+        tick_positions = [5 + i*10 for i in range(len(leaves_labels))]
+        
+        fig_dendr.update_layout(
+            title="Дендрограмма: иерархия схожести магазинов",
+            xaxis=dict(title="Магазины", ticktext=leaves_labels, 
+                      tickvals=tick_positions),
+            yaxis_title="Расстояние",
+            height=600,
+            hovermode='closest'
+        )
+        
+        st.plotly_chart(fig_dendr, use_container_width=True)
+        
+        st.info("""
+        **Как читать:** Чем ниже точка слияния, тем более похожи магазины.
+        Вертикальная линия = группа схожих магазинов.
+        """)
+    
+    # --- БЛОК 9: СРАВНЕНИЕ МАГАЗИНОВ ---
+    st.header("9️⃣ Поиск похожих магазинов")
+    
+    col_c1, col_c2 = st.columns([1, 2])
+    
+    with col_c1:
+        selected_store = st.selectbox("Выберите магазин:", pivot_pct.index.tolist())
+    
+    if selected_store:
+        store_cluster = pivot_pct_clustered.loc[selected_store, 'Кластер']
+        
+        # Извлекаем профиль магазина
+        store_profile = pivot_pct.loc[selected_store]
+        
+        # Находим самые похожие магазины (по косинусному расстоянию)
+        from sklearn.metrics.pairwise import cosine_similarity
+        
+        # Вычисляем схожесть со всеми магазинами
+        similarities = cosine_similarity([store_profile], pivot_pct)[0]
+        
+        # Создаем DataFrame для удобной работы
+        similarity_df = pd.DataFrame({
+            'Магазин': pivot_pct.index,
+            'Схожесть': similarities,
+            'Кластер': pivot_pct_clustered['Кластер'].values
+        })
+        
+        # КРИТИЧНО: Явно исключаем выбранный магазин
+        similarity_df = similarity_df[similarity_df['Магазин'] != selected_store]
+        
+        # Сортируем по схожести и берем топ-5
+        similarity_df = similarity_df.sort_values('Схожесть', ascending=False).head(5)
+        
+        similar_stores = similarity_df['Магазин'].values
+        similar_scores = similarity_df['Схожесть'].values
+        
+        with col_c2:
+            st.markdown(f"**Кластер:** {int(store_cluster)}")
+            st.markdown("**Топ-5 похожих магазинов:**")
+            
+            # Форматируем для отображения
+            display_df = similarity_df[['Магазин', 'Схожесть', 'Кластер']].copy()
+            display_df['Схожесть'] = display_df['Схожесть'].apply(lambda x: f"{x*100:.1f}%")
+            display_df['Кластер'] = display_df['Кластер'].astype(int)
+            
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        # Сравнение профилей
+        st.markdown("**Сравнение профилей (доли сегментов):**")
+        
+        comparison_data = []
+        comparison_data.append(store_profile.values)
+        for store in similar_stores[:3]:
+            comparison_data.append(pivot_pct.loc[store].values)
+        
+        comparison_df = pd.DataFrame(
+            comparison_data,
+            columns=store_profile.index,
+            index=[selected_store] + list(similar_stores[:3])
+        ).T
+        
+        fig_compare = px.bar(
+            comparison_df,
+            barmode='group',
+            title="Сравнение структуры ассортимента",
+            labels={'value': 'Доля, %', 'index': 'Сегмент'}
+        )
+        fig_compare.update_layout(height=400)
+        st.plotly_chart(fig_compare, use_container_width=True)
+    
+    # --- БЛОК 10: РЕКОМЕНДАЦИИ ---
+    st.header("🎯 Рекомендации по оптимизации")
+    
+    rec_col1, rec_col2 = st.columns(2)
+    
+    with rec_col1:
+        st.markdown("### По результатам кластеризации:")
+        st.markdown(f"""
+        1. **Создайте {n_clusters} торговые матрицы** — по одной на кластер
+        2. **Флагманские магазины** — кластеры с высокой долей премиум-сегмента
+        3. **Формат "у дома"** — кластеры с фокусом на эконом-сегмент
+        4. **Тестирование** — перенос ассортимента между похожими магазинами
+        5. **Мониторинг** — повторная кластеризация каждые 3-6 месяцев
+        """)
+    
+    with rec_col2:
+        st.markdown("### Качество модели:")
+        
+        quality_status = "🟢 Отличное" if silhouette > 0.7 else "🟡 Хорошее" if silhouette > 0.5 else "🔴 Требует улучшения"
+        st.markdown(f"**Статус:** {quality_status}")
+        
+        if silhouette < 0.5:
+            st.warning("""
+            **Рекомендации по улучшению:**
+            - Попробуйте изменить количество кластеров
+            - Используйте метод иерархической кластеризации
+            - Добавьте дополнительные признаки (оборот, ABC-категории)
+            """)
+        
+        st.markdown(f"""
+        **Метрики:**
+        - Silhouette: {silhouette:.3f} {'✓' if silhouette > 0.5 else '✗'}
+        - Davies-Bouldin: {davies_bouldin:.3f} {'✓' if davies_bouldin < 1.0 else '✗'}
+        - Calinski-Harabasz: {calinski_harabasz:.0f}
+        """)
+    
+    # --- БЛОК 11: EXPORT ---
+    st.header("📥 Экспорт результатов")
+    
+    # Подготовка итоговой таблицы
+    result_df = pivot_pct_clustered.reset_index()
+    result_df = result_df.rename(columns={'index': 'Магазин'})
+    
+    # Добавляем метрики качества в экспорт
+    export_col1, export_col2 = st.columns(2)
+    
+    with export_col1:
+        # CSV экспорт
+        csv = result_df.to_csv(index=False, encoding='utf-8-sig')
+        st.download_button(
+            label="📥 Скачать результаты кластеризации (CSV)",
+            data=csv,
+            file_name=f"store_clusters_k{n_clusters}.csv",
+            mime="text/csv"
+        )
+    
+    with export_col2:
+        # Excel экспорт с несколькими листами
+        from io import BytesIO
+        
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            result_df.to_excel(writer, sheet_name='Кластеры', index=False)
+            
+            # Профили кластеров
+            cluster_profiles.to_excel(writer, sheet_name='Профили_кластеров')
+            
+            # Метрики
+            metrics_summary = pd.DataFrame({
+                'Метрика': ['Silhouette Score', 'Davies-Bouldin Index', 'Calinski-Harabasz Score'],
+                'Значение': [silhouette, davies_bouldin, calinski_harabasz],
+                'Интерпретация': [
+                    '>0.5: хорошо, >0.7: отлично',
+                    '<1.0: отлично',
+                    'Чем больше, тем лучше'
+                ]
+            })
+            metrics_summary.to_excel(writer, sheet_name='Метрики', index=False)
+        
+        st.download_button(
+            label="📥 Скачать полный отчет (Excel)",
+            data=output.getvalue(),
+            file_name=f"store_clustering_report_k{n_clusters}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    
+    st.markdown("---")
+    st.success(f"""
+    ✅ **Анализ завершен!** 
+    
+    - Проанализировано: {len(pivot_pct)} магазинов
+    - Создано: {n_clusters} кластеров
+    - Качество (Silhouette): {silhouette:.3f} {'🟢' if silhouette > 0.7 else '🟡' if silhouette > 0.5 else '🔴'}
+    - Рекомендуемые кластеры: {optimal_k_silhouette} (по всем метрикам)
+    """)
+    
+    st.markdown("---")
+    
+    with st.expander("ℹ️ Справка по интерпретации результатов"):
+        st.markdown("""
+        ### Метрики качества кластеризации
+        
+        **Silhouette Score** (коэффициент силуэта)
+        - Диапазон: [-1, 1]
+        - > 0.7: отличная кластеризация
+        - 0.5-0.7: хорошая кластеризация
+        - 0.25-0.5: приемлемая, есть наложения
+        - < 0.25: плохая кластеризация
+        
+        **Davies-Bouldin Index**
+        - Диапазон: [0, ∞)
+        - < 1.0: отличная кластеризация
+        - 1.0-2.0: хорошая кластеризация
+        - > 2.0: слабая кластеризация
+        
+        **Calinski-Harabasz Score**
+        - Диапазон: [0, ∞)
+        - Чем больше, тем лучше
+        - Нет абсолютных порогов, сравнивайте разные k
+        
+        **Elbow Method**
+        - Ищет "локоть" на графике Inertia
+        - Точка, где добавление кластеров не дает улучшения
+        
+        ### Применение результатов
+        
+        1. **Создание торговых матриц:** для каждого кластера своя матрица
+        2. **Оптимизация закупок:** общие закупки для кластера
+        3. **A/B тестирование:** внутри кластера магазины взаимозаменяемы
+        4. **Прогнозирование:** модели на уровне кластера точнее
+        5. **Управление персоналом:** обучение с учетом специфики кластера
+        """)
+    
+    # Дополнительная информация
+    st.info("""
+    **💡 Советы:**
+    - Запускайте анализ каждые 3-6 месяцев
+    - Сравнивайте результаты при разных k через метрики
+    - Используйте дендрограмму для понимания иерархии
+    - Проверяйте похожие магазины для cross-selling идей
+    """)
 
-            # Зведена таблиця
-            summary_pivot.to_excel(writer, sheet_name='Зведена_ABC')
-
-            # Бізнес-метрики
-            metrics_df.to_excel(writer, sheet_name='Бізнес_метрики', index=False)
-
-            # Топ до зняття
-            if len(remove_display) > 0:
-                remove_display.to_excel(writer, sheet_name='Топ_до_зняття', index=False)
-
-        st.download_button("📥 Завантажити Excel", buffer.getvalue(), "analysis_results.xlsx",
-                          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        st.success("✅ Готово!")
-    except Exception as e:
-        st.error(f"❌ Помилка: {str(e)}")
-
-with st.expander("ℹ️ Інформація"):
-    st.write(f"**Статус:** Prophet {'✅' if PROPHET_AVAILABLE else '❌'}, Оброблено: {len(final)}")
-    if not PROPHET_AVAILABLE:
-        st.warning("⚠️ Встановіть Prophet: pip install prophet")
-
-st.divider()
-st.caption("📊 Звіт згенеровано системою аналізу товарного портфеля")
+else:
+    st.info("👆 Загрузите файл Excel с продажами для начала анализа")
+    
+    with st.expander("ℹ️ Требования к файлу"):
+        st.markdown("""
+        Файл должен содержать колонки:
+        - **Magazin** — название магазина
+        - **Segment** — товарный сегмент
+        - **Sum** — сумма продаж
+        
+        Опционально: `Art` (артикул), `Qty` (количество)
+        """)
