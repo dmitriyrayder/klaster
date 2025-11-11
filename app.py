@@ -14,19 +14,77 @@ st.set_page_config(page_title="Кластеризация магазинов", l
 st.title("📊 Кластеризация магазинов по структуре ассортимента")
 st.markdown("**Метод:** Сегментация по долям товарных сегментов в обороте")
 
-# Загрузка файла
-uploaded_file = st.file_uploader("Загрузите файл с продажами (Excel)", type=['xlsx', 'xls'])
+# Выбор источника данных
+data_source = st.radio(
+    "Источник данных:",
+    ["📁 Excel файл", "📊 Google Sheets"],
+    horizontal=True
+)
 
-if uploaded_file:
-    # Чтение данных
-    df = pd.read_excel(uploaded_file)
+df = None
+
+if data_source == "📁 Excel файл":
+    # Загрузка файла
+    uploaded_file = st.file_uploader("Загрузите файл с продажами (Excel)", type=['xlsx', 'xls'])
     
-    st.success(f"✅ Загружено: {len(df):,} строк, {df['Magazin'].nunique()} магазинов, {df['Art'].nunique():,} артикулов")
+    if uploaded_file:
+        df = pd.read_excel(uploaded_file)
+
+else:  # Google Sheets
+    st.markdown("**Требования:** Таблица должна быть доступна по ссылке (настройки доступа)")
+    
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        sheets_url = st.text_input(
+            "Ссылка на Google Sheets:",
+            placeholder="https://docs.google.com/spreadsheets/d/..."
+        )
+    
+    with col2:
+        load_button = st.button("📥 Загрузить", type="primary")
+    
+    if sheets_url and load_button:
+        try:
+            # Извлекаем ID таблицы и листа из ссылки
+            import re
+            
+            spreadsheet_id_match = re.search(r'/d/([a-zA-Z0-9-_]+)', sheets_url)
+            sheet_id_match = re.search(r'gid=([0-9]+)', sheets_url)
+            
+            if not spreadsheet_id_match:
+                st.error("❌ Неправильная ссылка. Убедитесь, что это ссылка на Google Sheets")
+                st.stop()
+            
+            spreadsheet_id = spreadsheet_id_match.group(1)
+            sheet_id = sheet_id_match.group(1) if sheet_id_match else '0'
+            
+            # Формируем ссылку для экспорта
+            export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid={sheet_id}"
+            
+            with st.spinner("Загрузка данных из Google Sheets..."):
+                df = pd.read_csv(export_url)
+            
+            st.success("✅ Данные загружены из Google Sheets")
+            
+        except Exception as e:
+            st.error(f"❌ Ошибка загрузки: {str(e)}")
+            st.info("💡 Проверьте: 1) Таблица доступна по ссылке 2) Ссылка правильная")
+            st.stop()
+
+if df is not None:
+    
+    # Формируем сообщение о загруженных данных
+    info_msg = f"✅ Загружено: {len(df):,} строк, {df['Magazin'].nunique()} магазинов"
+    if 'Art' in df.columns:
+        info_msg += f", {df['Art'].nunique():,} артикулов"
+    st.success(info_msg)
     
     # Проверка колонок
     required_cols = ['Magazin', 'Segment', 'Sum']
     if not all(col in df.columns for col in required_cols):
-        st.error(f"❌ Файл должен содержать колонки: {required_cols}")
+        st.error(f"❌ Таблица должна содержать колонки: {required_cols}")
+        st.info(f"📋 Найденные колонки: {', '.join(df.columns.tolist())}")
         st.stop()
     
     # --- БЛОК 1: АНАЛИЗ СЕГМЕНТОВ ---
@@ -629,15 +687,29 @@ if uploaded_file:
     - Проверяйте похожие магазины для cross-selling идей
     """)
 
-else:
-    st.info("👆 Загрузите файл Excel с продажами для начала анализа")
+if df is None:
+    st.info("👆 Выберите источник данных и загрузите таблицу для начала анализа")
     
-    with st.expander("ℹ️ Требования к файлу"):
+    with st.expander("ℹ️ Требования к данным"):
         st.markdown("""
-        Файл должен содержать колонки:
+        ### Структура данных
+        
+        Таблица должна содержать колонки:
         - **Magazin** — название магазина
         - **Segment** — товарный сегмент
         - **Sum** — сумма продаж
         
         Опционально: `Art` (артикул), `Qty` (количество)
+        
+        ### Google Sheets
+        
+        1. Откройте вашу таблицу в Google Sheets
+        2. Нажмите "Настройки доступа" (правый верхний угол)
+        3. Выберите "Доступ по ссылке" → "Все, у кого есть ссылка"
+        4. Скопируйте ссылку и вставьте выше
+        
+        **Пример ссылки:**
+        ```
+        https://docs.google.com/spreadsheets/d/1lJLON5N_EKQ5ICv0Pprp5DamP1tNAhBIph4uEoWC04Q/edit#gid=64159818
+        ```
         """)
