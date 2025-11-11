@@ -3,6 +3,7 @@ pandas
 numpy
 plotly
 prophet
-catboost
 openpyxl
 scikit-learn
+scipy
+
