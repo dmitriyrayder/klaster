@@ -95,7 +95,7 @@ if df is not None:
     with col1:
         st.subheader("Структура оборота по сегментам")
         segment_sales = df.groupby('Segment')['Sum'].sum().sort_values(ascending=False)
-        segment_pct = (segment_sales / segment_sales.sum() * 100).round(2)
+        segment_pct = ((segment_sales / segment_sales.sum()) * 100).round(2)
         
         segment_df = pd.DataFrame({
             'Сегмент': segment_sales.index,
