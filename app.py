@@ -1521,22 +1521,19 @@ def main():
                 help="Як довго зберігати дані в кеші"
             )
 
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🔄 Оновити дані", use_container_width=True):
-                    # Очистка кэша
-                    if os.path.exists('google_sheets_cache.pkl'):
-                        os.remove('google_sheets_cache.pkl')
-                    if os.path.exists('google_sheets_cache_time.txt'):
-                        os.remove('google_sheets_cache_time.txt')
-                    st.success("✅ Кеш очищено!")
-
-            with col2:
-                # Показываем время последнего обновления
+            if st.button("🔄 Оновити дані", use_container_width=True):
+                # Очистка кэша
+                if os.path.exists('google_sheets_cache.pkl'):
+                    os.remove('google_sheets_cache.pkl')
                 if os.path.exists('google_sheets_cache_time.txt'):
-                    with open('google_sheets_cache_time.txt', 'r') as f:
-                        cache_time = datetime.fromisoformat(f.read())
-                        st.info(f"📅 Оновлено: {cache_time.strftime('%d.%m %H:%M')}")
+                    os.remove('google_sheets_cache_time.txt')
+                st.success("✅ Кеш очищено!")
+
+            # Показываем время последнего обновления
+            if os.path.exists('google_sheets_cache_time.txt'):
+                with open('google_sheets_cache_time.txt', 'r') as f:
+                    cache_time = datetime.fromisoformat(f.read())
+                    st.info(f"📅 Оновлено: {cache_time.strftime('%d.%m %H:%M')}")
 
             # Загружаем данные из Google Sheets с кэшем
             df = load_from_google_sheets_cached(google_sheets_url, cache_duration)
