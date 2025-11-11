@@ -24,6 +24,12 @@ st.set_page_config(
 # CSS стили
 st.markdown("""
 <style>
+    /* Общие стили для приложения */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+
+    /* Заголовок */
     .main-header {
         font-size: 3rem;
         font-weight: bold;
@@ -33,8 +39,40 @@ st.markdown("""
         text-align: center;
         margin-bottom: 2rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        padding: 1rem;
+        border-bottom: 3px solid #667eea;
     }
-    
+
+    /* Стили для боковой панели */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+        border-right: 3px solid #667eea;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    }
+
+    section[data-testid="stSidebar"] > div {
+        padding: 2rem 1rem;
+    }
+
+    /* Основной контейнер */
+    .main .block-container {
+        padding: 2rem 3rem;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        margin: 2rem auto;
+    }
+
+    /* Разделители секций */
+    hr {
+        margin: 2rem 0;
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #667eea, transparent);
+    }
+
+    /* Карточки метрик */
     .metric-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 1.5rem;
@@ -44,13 +82,16 @@ st.markdown("""
         margin: 0.5rem 0;
         box-shadow: 0 8px 16px rgba(0,0,0,0.2);
         transition: transform 0.3s ease;
+        border: 2px solid rgba(255,255,255,0.3);
     }
-    
+
     .metric-container:hover {
         transform: translateY(-5px);
         box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+        border-color: rgba(255,255,255,0.5);
     }
-    
+
+    /* Карточки инсайтов */
     .insight-card {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         padding: 1.2rem;
@@ -59,8 +100,10 @@ st.markdown("""
         margin: 0.5rem 0;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         border-left: 5px solid #fff;
+        border: 2px solid rgba(255,255,255,0.3);
     }
-    
+
+    /* Карточки проблем */
     .problem-card {
         background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
         padding: 1.2rem;
@@ -70,8 +113,10 @@ st.markdown("""
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         color: white;
         font-weight: 500;
+        border: 2px solid rgba(255,255,255,0.3);
     }
-    
+
+    /* Карточки точности */
     .accuracy-card {
         background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
         padding: 1.5rem;
@@ -79,6 +124,163 @@ st.markdown("""
         margin: 1rem 0;
         box-shadow: 0 8px 16px rgba(0,0,0,0.2);
         color: white;
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    /* Стили для колонок */
+    div[data-testid="column"] {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        margin: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    div[data-testid="column"]:hover {
+        border-color: rgba(102, 126, 234, 0.4);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+
+    /* Стили для элементов Streamlit */
+    .stSelectbox, .stMultiSelect, .stSlider, .stDateInput, .stNumberInput {
+        background: white;
+        border-radius: 10px;
+        padding: 0.5rem;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* Кнопки */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        border-color: rgba(255,255,255,0.5);
+    }
+
+    /* Стили для вкладок */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1rem;
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
+    }
+
+    .stTabs [data-baseweb="tab"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        border-color: rgba(255,255,255,0.5);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+
+    /* Стили для expander */
+    .streamlit-expanderHeader {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 10px;
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        padding: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .streamlit-expanderHeader:hover {
+        border-color: rgba(102, 126, 234, 0.5);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+    .streamlit-expanderContent {
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* Стили для графиков */
+    .js-plotly-plot {
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        overflow: hidden;
+        background: white;
+        margin: 1rem 0;
+    }
+
+    /* Стили для таблиц */
+    .dataframe {
+        border: 2px solid rgba(102, 126, 234, 0.3) !important;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    /* Стили для информационных блоков */
+    .stAlert {
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+    }
+
+    /* Секции с разграничением */
+    .section-divider {
+        margin: 2rem 0;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    }
+
+    /* Заголовки секций */
+    h1, h2, h3 {
+        color: #2d3748;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Стили для загрузки файлов */
+    .stFileUploader {
+        background: white;
+        border: 2px dashed rgba(102, 126, 234, 0.4);
+        border-radius: 12px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+    }
+
+    .stFileUploader:hover {
+        border-color: rgba(102, 126, 234, 0.6);
+        background: rgba(102, 126, 234, 0.05);
     }
 </style>
 """, unsafe_allow_html=True)
