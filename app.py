@@ -32,86 +32,181 @@ st.markdown("""
 <style>
     /* ============= ЗАГАЛЬНІ СТИЛІ ============= */
 
-    /* Основний контейнер */
+    /* Основний контейнер - ТЕМНИЙ ФОН */
     .main {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+        background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 50%, #1e293b 100%);
         padding: 2rem;
+    }
+
+    /* Додатковий ефект для контенту */
+    .block-container {
+        background: rgba(30, 41, 59, 0.3);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 3px solid rgba(59, 130, 246, 0.3);
+        box-shadow: 0 0 50px rgba(59, 130, 246, 0.2);
     }
 
     /* Заголовки */
     h1 {
-        color: #1e3a8a;
-        font-weight: 700;
-        padding: 1.5rem;
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white !important;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        margin-bottom: 2rem;
-        border-left: 6px solid #1e40af;
+        color: #ffffff;
+        font-weight: 800;
+        padding: 2rem 2.5rem;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.6),
+                    0 0 60px rgba(59, 130, 246, 0.4),
+                    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+        margin-bottom: 2.5rem;
+        border: 6px solid #1e40af;
+        border-left: 12px solid #60a5fa;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    h1::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+        0% { left: -100%; }
+        50%, 100% { left: 100%; }
     }
 
     h2 {
         color: #1e40af;
-        font-weight: 600;
-        padding: 1rem 1.5rem;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        margin: 2rem 0 1.5rem 0;
-        border-left: 5px solid #3b82f6;
-        border-bottom: 2px solid #e0e7ff;
+        font-weight: 700;
+        padding: 1.5rem 2rem;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        border-radius: 14px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2),
+                    0 0 30px rgba(59, 130, 246, 0.3),
+                    inset 0 1px 3px rgba(59, 130, 246, 0.1);
+        margin: 2.5rem 0 2rem 0;
+        border: 5px solid #3b82f6;
+        border-left: 12px solid #2563eb;
+        border-bottom: 6px solid #1e40af;
+        position: relative;
+    }
+
+    h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+        border-radius: 0 0 10px 10px;
     }
 
     h3 {
-        color: #2563eb;
-        font-weight: 600;
-        padding: 0.8rem 1.2rem;
-        background: linear-gradient(to right, #eff6ff, #ffffff);
-        border-radius: 8px;
-        border-left: 4px solid #60a5fa;
-        margin: 1.5rem 0 1rem 0;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        color: #1e40af;
+        font-weight: 700;
+        padding: 1.2rem 1.8rem;
+        background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%);
+        border-radius: 12px;
+        border: 4px solid #60a5fa;
+        border-left: 10px solid #3b82f6;
+        margin: 2rem 0 1.5rem 0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15),
+                    0 0 20px rgba(59, 130, 246, 0.2),
+                    inset 0 1px 2px rgba(59, 130, 246, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    h3::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 10px;
+        background: linear-gradient(180deg, #3b82f6, #60a5fa);
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
     }
 
     /* ============= МЕТРИКИ ============= */
 
     [data-testid="metric-container"] {
-        background: white;
-        padding: 1.2rem;
-        border-radius: 12px;
-        border: 2px solid #e0e7ff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        padding: 1.8rem;
+        border-radius: 16px;
+        border: 5px solid #3b82f6;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2),
+                    0 0 40px rgba(59, 130, 246, 0.4),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
         transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    [data-testid="metric-container"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
     }
 
     [data-testid="metric-container"]:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
-        border-color: #3b82f6;
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4),
+                    0 0 60px rgba(59, 130, 246, 0.5);
+        border-color: #60a5fa;
+        border-width: 6px;
     }
 
     [data-testid="stMetricLabel"] {
-        color: #64748b;
-        font-weight: 600;
-        font-size: 0.9rem;
+        color: #475569;
+        font-weight: 700;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     [data-testid="stMetricValue"] {
         color: #1e40af;
-        font-weight: 700;
-        font-size: 1.8rem;
+        font-weight: 800;
+        font-size: 2rem;
+        text-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
     }
 
     /* ============= ГРАФІКИ ============= */
 
     .stPlotlyChart {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        border: 2px solid #e0e7ff;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        margin: 1rem 0;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        padding: 2rem;
+        border-radius: 16px;
+        border: 5px solid #3b82f6;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
+                    0 0 50px rgba(59, 130, 246, 0.3),
+                    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+        margin: 1.5rem 0;
+        position: relative;
+    }
+
+    .stPlotlyChart::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+        border-radius: 16px 16px 0 0;
     }
 
     /* ============= РОЗДІЛИ ТА КАРТОЧКИ ============= */
@@ -134,39 +229,68 @@ st.markdown("""
 
     /* Успіх */
     .stSuccess {
-        background: linear-gradient(to right, #ecfdf5, #ffffff) !important;
-        border-left-color: #10b981 !important;
-        border: 2px solid #d1fae5 !important;
+        background: linear-gradient(135deg, #ecfdf5, #ffffff) !important;
+        border-left: 8px solid #10b981 !important;
+        border: 5px solid #10b981 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3),
+                    0 0 30px rgba(16, 185, 129, 0.2) !important;
+        padding: 1.5rem !important;
     }
 
     /* Інформація */
     .stInfo {
-        background: linear-gradient(to right, #eff6ff, #ffffff) !important;
-        border-left-color: #3b82f6 !important;
-        border: 2px solid #dbeafe !important;
+        background: linear-gradient(135deg, #eff6ff, #ffffff) !important;
+        border-left: 8px solid #3b82f6 !important;
+        border: 5px solid #3b82f6 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3),
+                    0 0 30px rgba(59, 130, 246, 0.2) !important;
+        padding: 1.5rem !important;
     }
 
     /* Попередження */
     .stWarning {
-        background: linear-gradient(to right, #fffbeb, #ffffff) !important;
-        border-left-color: #f59e0b !important;
-        border: 2px solid #fef3c7 !important;
+        background: linear-gradient(135deg, #fffbeb, #ffffff) !important;
+        border-left: 8px solid #f59e0b !important;
+        border: 5px solid #f59e0b !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3),
+                    0 0 30px rgba(245, 158, 11, 0.2) !important;
+        padding: 1.5rem !important;
     }
 
     /* Помилка */
     .stError {
-        background: linear-gradient(to right, #fef2f2, #ffffff) !important;
-        border-left-color: #ef4444 !important;
-        border: 2px solid #fecaca !important;
+        background: linear-gradient(135deg, #fef2f2, #ffffff) !important;
+        border-left: 8px solid #ef4444 !important;
+        border: 5px solid #ef4444 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3),
+                    0 0 30px rgba(239, 68, 68, 0.2) !important;
+        padding: 1.5rem !important;
     }
 
     /* ============= ТАБЛИЦІ ============= */
 
     [data-testid="stDataFrame"] {
-        border: 2px solid #e0e7ff;
-        border-radius: 12px;
+        border: 6px solid #3b82f6;
+        border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
+                    0 0 50px rgba(59, 130, 246, 0.3);
+        position: relative;
+    }
+
+    [data-testid="stDataFrame"]::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 8px;
+        background: linear-gradient(90deg, #1e40af, #3b82f6, #60a5fa, #3b82f6, #1e40af);
+        z-index: 10;
     }
 
     [data-testid="stDataFrame"] table {
@@ -174,159 +298,273 @@ st.markdown("""
     }
 
     [data-testid="stDataFrame"] thead tr {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%) !important;
         color: white !important;
     }
 
     [data-testid="stDataFrame"] thead th {
         color: white !important;
-        font-weight: 600;
-        padding: 1rem;
-        border-bottom: 3px solid #1e40af;
+        font-weight: 700;
+        padding: 1.2rem;
+        border-bottom: 5px solid #1e40af;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.95rem;
     }
 
     [data-testid="stDataFrame"] tbody tr:nth-child(even) {
-        background: #f8fafc;
+        background: linear-gradient(to right, #f8fafc, #ffffff);
     }
 
     [data-testid="stDataFrame"] tbody tr:hover {
-        background: #eff6ff;
+        background: linear-gradient(to right, #dbeafe, #eff6ff);
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    [data-testid="stDataFrame"] tbody td {
+        border-right: 2px solid #e0e7ff;
+        padding: 1rem;
     }
 
     /* ============= КНОПКИ ТА ЕЛЕМЕНТИ ВВОДУ ============= */
 
     .stButton > button {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #2563eb 100%);
         color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.7rem 2rem;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        border: 4px solid #1e40af;
+        border-radius: 12px;
+        padding: 1rem 2.5rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4),
+                    0 0 40px rgba(59, 130, 246, 0.3);
         transition: all 0.3s ease;
     }
 
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.6),
+                    0 0 60px rgba(59, 130, 246, 0.5);
         background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        border-color: #60a5fa;
+        border-width: 5px;
     }
 
     /* Текстові поля */
     .stTextInput > div > div {
-        border: 2px solid #e0e7ff;
-        border-radius: 10px;
+        border: 4px solid #3b82f6;
+        border-radius: 12px;
+        background: linear-gradient(to bottom, #ffffff, #f8fafc);
         transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
     }
 
     .stTextInput > div > div:focus-within {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #60a5fa;
+        border-width: 5px;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2),
+                    0 4px 15px rgba(59, 130, 246, 0.3);
+        transform: translateY(-2px);
     }
 
     /* Селектори */
     .stSelectbox > div > div {
-        border: 2px solid #e0e7ff;
-        border-radius: 10px;
-        background: white;
+        border: 4px solid #3b82f6;
+        border-radius: 12px;
+        background: linear-gradient(to bottom, #ffffff, #f8fafc);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .stSelectbox > div > div:focus-within {
+        border-color: #60a5fa;
+        border-width: 5px;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
     }
 
     /* Радіо кнопки */
     .stRadio > div {
-        background: white;
-        padding: 1rem;
-        border-radius: 10px;
-        border: 2px solid #e0e7ff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        background: linear-gradient(135deg, #ffffff, #f0f9ff);
+        padding: 1.5rem;
+        border-radius: 14px;
+        border: 5px solid #3b82f6;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
     }
 
     /* Мультивибір */
     .stMultiSelect > div > div {
-        border: 2px solid #e0e7ff;
-        border-radius: 10px;
-        background: white;
+        border: 4px solid #3b82f6;
+        border-radius: 12px;
+        background: linear-gradient(to bottom, #ffffff, #f8fafc);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .stMultiSelect > div > div:focus-within {
+        border-color: #60a5fa;
+        border-width: 5px;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
     }
 
     /* ============= EXPANDER (РОЗГОРТАННЯ) ============= */
 
     .streamlit-expanderHeader {
-        background: white;
-        border: 2px solid #e0e7ff;
-        border-radius: 10px;
-        padding: 1rem 1.5rem;
-        font-weight: 600;
+        background: linear-gradient(135deg, #ffffff, #f0f9ff);
+        border: 5px solid #3b82f6;
+        border-radius: 14px;
+        padding: 1.2rem 2rem;
+        font-weight: 700;
         color: #1e40af;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2),
+                    0 0 30px rgba(59, 130, 246, 0.15);
         transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .streamlit-expanderHeader::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 8px;
+        background: linear-gradient(180deg, #3b82f6, #60a5fa);
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
     }
 
     .streamlit-expanderHeader:hover {
-        border-color: #3b82f6;
-        background: #eff6ff;
+        border-color: #60a5fa;
+        border-width: 6px;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3),
+                    0 0 40px rgba(59, 130, 246, 0.25);
+        transform: translateX(5px);
     }
 
     .streamlit-expanderContent {
-        background: white;
-        border: 2px solid #e0e7ff;
+        background: linear-gradient(to bottom, #ffffff, #f8fafc);
+        border: 5px solid #3b82f6;
         border-top: none;
-        border-radius: 0 0 10px 10px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-radius: 0 0 14px 14px;
+        padding: 2rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15),
+                    0 0 40px rgba(59, 130, 246, 0.2);
     }
 
     /* ============= РОЗДІЛЮВАЧІ ============= */
 
     hr {
-        margin: 2.5rem 0;
+        margin: 3rem 0;
         border: none;
-        height: 3px;
-        background: linear-gradient(to right, transparent, #3b82f6, transparent);
-        border-radius: 5px;
+        height: 6px;
+        background: linear-gradient(to right,
+                    transparent,
+                    #1e40af,
+                    #3b82f6,
+                    #60a5fa,
+                    #3b82f6,
+                    #1e40af,
+                    transparent);
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4),
+                    0 0 20px rgba(59, 130, 246, 0.3);
+        position: relative;
+    }
+
+    hr::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 10px;
+        background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.2), transparent);
+        filter: blur(5px);
     }
 
     /* ============= ПРІОРИТЕТИ (CUSTOM BOX) ============= */
 
     .priority-box {
-        border-left: 5px solid;
-        padding: 1.5rem;
-        margin: 1.5rem 0;
-        border-radius: 10px;
-        background: white;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 5px solid;
+        border-left: 10px solid;
+        padding: 2rem;
+        margin: 2rem 0;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15),
+                    0 0 40px rgba(59, 130, 246, 0.2);
+        position: relative;
+    }
+
+    .priority-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6);
+        border-radius: 14px 14px 0 0;
     }
 
     /* ============= КОЛОНКИ ============= */
 
     [data-testid="column"] {
-        background: white;
-        padding: 1rem;
-        border-radius: 10px;
-        border: 2px solid #f1f5f9;
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        padding: 1.5rem;
+        border-radius: 14px;
+        border: 4px solid #3b82f6;
         margin: 0.5rem;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2),
+                    0 0 30px rgba(59, 130, 246, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="column"]:hover {
+        border-color: #60a5fa;
+        border-width: 5px;
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3),
+                    0 0 40px rgba(59, 130, 246, 0.2);
+        transform: translateY(-3px);
     }
 
     /* ============= ЗАВАНТАЖУВАЧ ФАЙЛІВ ============= */
 
     [data-testid="stFileUploader"] {
-        background: white;
-        padding: 2rem;
-        border: 3px dashed #3b82f6;
-        border-radius: 12px;
+        background: linear-gradient(135deg, #ffffff, #f0f9ff);
+        padding: 3rem;
+        border: 6px dashed #3b82f6;
+        border-radius: 16px;
         text-align: center;
         transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2),
+                    inset 0 2px 4px rgba(59, 130, 246, 0.1);
     }
 
     [data-testid="stFileUploader"]:hover {
-        border-color: #2563eb;
-        background: #eff6ff;
+        border-color: #60a5fa;
+        border-width: 8px;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3),
+                    0 0 50px rgba(59, 130, 246, 0.3);
+        transform: scale(1.02);
     }
 
     /* ============= МОБІЛЬНА АДАПТАЦІЯ ============= */
 
     @media (max-width: 768px) {
+        .main {
+            padding: 1rem;
+        }
+
         .stPlotlyChart {
             height: 350px !important;
             padding: 1rem;
+            border-width: 4px;
         }
 
         .element-container {
@@ -335,17 +573,23 @@ st.markdown("""
 
         h1 {
             font-size: 24px !important;
-            padding: 1rem;
+            padding: 1.5rem;
+            border-width: 4px;
+            border-left-width: 8px;
         }
 
         h2 {
             font-size: 20px !important;
-            padding: 0.8rem 1rem;
+            padding: 1rem 1.5rem;
+            border-width: 4px;
+            border-left-width: 8px;
         }
 
         h3 {
             font-size: 18px !important;
-            padding: 0.6rem 1rem;
+            padding: 0.8rem 1.2rem;
+            border-width: 3px;
+            border-left-width: 6px;
         }
 
         .row-widget.stButton {
@@ -355,11 +599,17 @@ st.markdown("""
         [data-testid="metric-container"] {
             min-width: 100% !important;
             margin-bottom: 1rem;
+            border-width: 4px;
         }
 
         [data-testid="column"] {
             margin: 0.3rem;
-            padding: 0.7rem;
+            padding: 1rem;
+            border-width: 3px;
+        }
+
+        [data-testid="stDataFrame"] {
+            border-width: 4px;
         }
     }
 
@@ -368,7 +618,7 @@ st.markdown("""
     @keyframes fadeIn {
         from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(20px);
         }
         to {
             opacity: 1;
@@ -376,29 +626,81 @@ st.markdown("""
         }
     }
 
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+        }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
     .element-container {
-        animation: fadeIn 0.5s ease-in-out;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    h1, h2, h3 {
+        animation: slideInLeft 0.8s ease-out;
     }
 
     /* ============= СКРОЛЛБАР ============= */
 
     ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
+        width: 14px;
+        height: 14px;
     }
 
     ::-webkit-scrollbar-track {
-        background: #f1f5f9;
+        background: linear-gradient(135deg, #1e293b, #2d3748);
         border-radius: 10px;
+        border: 2px solid #1e40af;
     }
 
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        background: linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa);
         border-radius: 10px;
+        border: 2px solid #1e40af;
+        box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #2563eb, #1e40af);
+        background: linear-gradient(135deg, #3b82f6, #60a5fa, #93c5fd);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+    }
+
+    /* ============= ДОДАТКОВІ ЕФЕКТИ ============= */
+
+    /* Світіння для активних елементів */
+    .stButton > button:active {
+        transform: translateY(-2px) scale(0.98);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5);
+    }
+
+    /* Пульсація для важливих елементів */
+    [data-testid="metric-container"]:nth-child(1) {
+        animation: pulse 3s infinite;
+    }
+
+    /* Додаткове виділення для заголовків при скролі */
+    h1:hover, h2:hover, h3:hover {
+        transform: translateX(5px);
+        transition: transform 0.3s ease;
+    }
+
+    /* Тіні для текстових полів при вводі */
+    input:focus, textarea:focus {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4) !important;
     }
 </style>
 """, unsafe_allow_html=True)
