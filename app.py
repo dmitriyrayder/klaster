@@ -63,22 +63,32 @@ else:  # Google Sheets
             export_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid={sheet_id}"
             
             with st.spinner("Загрузка данных из Google Sheets..."):
-                df = pd.read_csv(export_url)
+                # Загружаем с явным указанием разделителя и обработкой ошибок
+                df = pd.read_csv(export_url, on_bad_lines='skip')
+                
+                # Проверяем, что данные загрузились
+                if df.empty:
+                    st.error("❌ Таблица пустая или не удалось загрузить данные")
+                    st.info("💡 Проверьте настройки доступа к таблице")
+                    st.stop()
             
-            st.success("✅ Данные загружены из Google Sheets")
+            st.success(f"✅ Данные загружены из Google Sheets ({len(df)} строк)")
             
+        except pd.errors.ParserError as e:
+            st.error(f"❌ Ошибка парсинга CSV: {str(e)}")
+            st.info("💡 Проверьте формат данных в таблице")
+            st.stop()
         except Exception as e:
             st.error(f"❌ Ошибка загрузки: {str(e)}")
-            st.info("💡 Проверьте: 1) Таблица доступна по ссылке 2) Ссылка правильная")
+            st.info("""
+            💡 Возможные причины:
+            1. Таблица не доступна по ссылке (проверьте настройки доступа)
+            2. Неправильная ссылка
+            3. Проблемы с сетью
+            """)
             st.stop()
 
 if df is not None:
-    
-    # Формируем сообщение о загруженных данных
-    info_msg = f"✅ Загружено: {len(df):,} строк, {df['Magazin'].nunique()} магазинов"
-    if 'Art' in df.columns:
-        info_msg += f", {df['Art'].nunique():,} артикулов"
-    st.success(info_msg)
     
     # Проверка колонок
     required_cols = ['Magazin', 'Segment', 'Sum']
@@ -86,6 +96,46 @@ if df is not None:
         st.error(f"❌ Таблица должна содержать колонки: {required_cols}")
         st.info(f"📋 Найденные колонки: {', '.join(df.columns.tolist())}")
         st.stop()
+    
+    # КРИТИЧНО: Преобразуем типы данных (особенно важно для CSV из Google Sheets)
+    try:
+        # Очищаем и преобразуем числовые колонки
+        df['Sum'] = pd.to_numeric(df['Sum'].astype(str).str.replace(',', '.').str.replace(' ', ''), errors='coerce')
+        
+        # Удаляем строки с пустыми значениями
+        initial_rows = len(df)
+        df = df.dropna(subset=['Magazin', 'Segment', 'Sum'])
+        df = df[df['Sum'] > 0]  # Убираем нулевые и отрицательные суммы
+        
+        if len(df) < initial_rows:
+            st.warning(f"⚠️ Удалено {initial_rows - len(df)} строк с некорректными данными")
+        
+        if len(df) == 0:
+            st.error("❌ Не осталось валидных данных после очистки")
+            st.stop()
+            
+    except Exception as e:
+        st.error(f"❌ Ошибка обработки данных: {str(e)}")
+        st.info("💡 Проверьте, что колонка Sum содержит числовые значения")
+        st.stop()
+    
+    # Формируем сообщение о загруженных данных
+    info_msg = f"✅ Загружено: {len(df):,} строк, {df['Magazin'].nunique()} магазинов"
+    if 'Art' in df.columns:
+        info_msg += f", {df['Art'].nunique():,} артикулов"
+    st.success(info_msg)
+    
+    # Диагностика (опционально)
+    with st.expander("🔍 Диагностика данных", expanded=False):
+        st.write("**Типы данных:**")
+        st.write(df.dtypes)
+        st.write("**Первые строки:**")
+        st.dataframe(df.head(3), use_container_width=True)
+        st.write("**Статистика по Sum:**")
+        st.write(f"- Min: {df['Sum'].min():,.2f}")
+        st.write(f"- Max: {df['Sum'].max():,.2f}")
+        st.write(f"- Mean: {df['Sum'].mean():,.2f}")
+        st.write(f"- Total: {df['Sum'].sum():,.2f}")
     
     # --- БЛОК 1: АНАЛИЗ СЕГМЕНТОВ ---
     st.header("1️⃣ Анализ товарных сегментов")
@@ -95,7 +145,14 @@ if df is not None:
     with col1:
         st.subheader("Структура оборота по сегментам")
         segment_sales = df.groupby('Segment')['Sum'].sum().sort_values(ascending=False)
-        segment_pct = ((segment_sales / segment_sales.sum()) * 100).round(2)
+        
+        # Безопасный расчет процентов
+        total_sum = segment_sales.sum()
+        if total_sum > 0:
+            segment_pct = (segment_sales / total_sum * 100).round(2)
+        else:
+            st.error("❌ Сумма продаж равна 0")
+            st.stop()
         
         segment_df = pd.DataFrame({
             'Сегмент': segment_sales.index,
