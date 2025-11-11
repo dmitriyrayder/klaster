@@ -423,7 +423,7 @@ if data_source == "Google Sheets":
     # Input для URL
     sheet_url_input = st.text_input(
         "Посилання на таблицю:",
-        placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=...",
+        placeholder="https://docs.google.com/spreadsheets/d/1lJLON5N_EKQ5ICv0Pprp5DamP1tNAhBIph4uEoWC04Q/edit?gid=64159818#gid=64159818",
         help="Таблиця повинна мати публічний доступ"
     )
     
