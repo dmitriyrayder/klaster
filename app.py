@@ -27,46 +27,502 @@ except ImportError:
 
 st.set_page_config(page_title="Аналіз продажів за сегментами", layout="wide", initial_sidebar_state="collapsed")
 
-# Мобільна оптимізація
+# Мобільна оптимізація + Премиум стилизация
 st.markdown("""
 <style>
-    /* Адаптивний дизайн для мобільних пристроїв */
+    /* ================ ОСНОВНИЙ КОНТЕЙНЕР ================ */
+    .main {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        animation: fadeIn 0.8s ease-in;
+    }
+
+    .block-container {
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 20px;
+        padding: 2rem 3rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        animation: slideUp 0.6s ease-out;
+    }
+
+    /* ================ АНИМАЦИИ ================ */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(30px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    /* ================ ЗАГОЛОВКИ З РАМКАМИ ================ */
+    h1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800 !important;
+        padding: 20px 0 20px 25px;
+        border-left: 8px solid #667eea;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        margin-bottom: 30px !important;
+        position: relative;
+        animation: slideUp 0.8s ease-out;
+    }
+
+    h1::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 8px;
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px 0 0 8px;
+        animation: pulse 2s infinite;
+    }
+
+    h2 {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700 !important;
+        padding: 15px 0 15px 20px;
+        border-left: 6px solid #f093fb;
+        border-radius: 6px;
+        box-shadow: 0 3px 10px rgba(240, 147, 251, 0.15);
+        margin: 25px 0 20px 0 !important;
+    }
+
+    h3 {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600 !important;
+        padding: 12px 0 12px 15px;
+        border-left: 5px solid #4facfe;
+        border-radius: 5px;
+        box-shadow: 0 2px 8px rgba(79, 172, 254, 0.15);
+        margin: 20px 0 15px 0 !important;
+    }
+
+    h4 {
+        color: #667eea;
+        font-weight: 600 !important;
+        padding: 10px 0 10px 12px;
+        border-left: 4px solid #667eea;
+        margin: 15px 0 10px 0 !important;
+    }
+
+    /* ================ МЕТРИКИ З РАМКАМИ ================ */
+    [data-testid="metric-container"] {
+        background: white;
+        border: 2px solid #e0e7ff;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        transition: all 0.3s ease;
+        animation: slideUp 0.5s ease-out;
+    }
+
+    [data-testid="metric-container"]:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
+        border-color: #667eea;
+    }
+
+    [data-testid="metric-container"] label {
+        font-weight: 600 !important;
+        color: #667eea !important;
+        font-size: 0.9rem !important;
+    }
+
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {
+        font-size: 2rem !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ================ ГРАФІКИ В КАРТОЧКАХ ================ */
+    .stPlotlyChart {
+        background: white;
+        border: 2px solid #e0e7ff;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        margin: 15px 0;
+        transition: all 0.3s ease;
+    }
+
+    .stPlotlyChart:hover {
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        border-color: #667eea;
+    }
+
+    /* ================ ТАБЛИЦЫ ================ */
+    [data-testid="stDataFrame"] {
+        border: 2px solid #e0e7ff;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    [data-testid="stDataFrame"] thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    [data-testid="stDataFrame"] thead th {
+        color: white !important;
+        font-weight: 700 !important;
+        padding: 15px !important;
+        border: none !important;
+    }
+
+    [data-testid="stDataFrame"] tbody tr:nth-child(even) {
+        background-color: #f8faff;
+    }
+
+    [data-testid="stDataFrame"] tbody tr:hover {
+        background-color: #e0e7ff;
+        transition: background-color 0.2s ease;
+    }
+
+    /* ================ ІНФОРМАЦІЙНІ БЛОКИ ================ */
+    .stAlert {
+        border-radius: 12px;
+        border: 2px solid;
+        padding: 1rem 1.5rem;
+        margin: 15px 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    [data-baseweb="notification"][kind="info"] {
+        background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+        border-left: 6px solid #0ea5e9;
+        border-radius: 12px;
+    }
+
+    [data-baseweb="notification"][kind="success"] {
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        border-left: 6px solid #22c55e;
+        border-radius: 12px;
+    }
+
+    [data-baseweb="notification"][kind="warning"] {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 6px solid #f59e0b;
+        border-radius: 12px;
+    }
+
+    [data-baseweb="notification"][kind="error"] {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-left: 6px solid #ef4444;
+        border-radius: 12px;
+    }
+
+    /* ================ КНОПКИ ================ */
+    .stButton button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .stButton button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    .stButton button:active {
+        transform: translateY(-1px);
+    }
+
+    /* ================ ТЕКСТОВІ ПОЛЯ ================ */
+    .stTextInput input, .stTextArea textarea {
+        border: 2px solid #e0e7ff;
+        border-radius: 12px;
+        padding: 12px;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+
+    /* ================ RADIO BUTTONS ================ */
+    [data-testid="stRadio"] {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
+    }
+
+    [data-testid="stRadio"] label {
+        font-weight: 600;
+        color: #667eea;
+    }
+
+    /* ================ SELECTBOX ================ */
+    [data-baseweb="select"] {
+        border: 2px solid #e0e7ff;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    [data-baseweb="select"]:hover {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* ================ MULTISELECT ================ */
+    [data-baseweb="tag"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        border: none;
+    }
+
+    /* ================ EXPANDER ================ */
+    .streamlit-expanderHeader {
+        background: linear-gradient(135deg, #f8faff 0%, #e0e7ff 100%);
+        border: 2px solid #e0e7ff;
+        border-radius: 12px;
+        padding: 15px;
+        font-weight: 600;
+        color: #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .streamlit-expanderHeader:hover {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+
+    .streamlit-expanderContent {
+        border: 2px solid #e0e7ff;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        padding: 20px;
+        background: white;
+    }
+
+    /* ================ КОЛОНКИ ================ */
+    [data-testid="column"] {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        border: 2px solid #f0f4ff;
+        margin: 5px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="column"]:hover {
+        border-color: #e0e7ff;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    /* ================ РОЗДІЛЮВАЧІ ================ */
+    hr {
+        border: none;
+        height: 3px;
+        background: linear-gradient(90deg,
+            rgba(102, 126, 234, 0) 0%,
+            rgba(102, 126, 234, 0.8) 50%,
+            rgba(102, 126, 234, 0) 100%);
+        margin: 30px 0;
+        border-radius: 3px;
+    }
+
+    /* ================ КАСТОМНИЙ SCROLLBAR ================ */
+    ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        border: 2px solid #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #764ba2 0%, #667eea 100%);
+    }
+
+    /* ================ FILE UPLOADER ================ */
+    [data-testid="stFileUploader"] {
+        background: white;
+        border: 3px dashed #c7d2fe;
+        border-radius: 15px;
+        padding: 30px;
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="stFileUploader"]:hover {
+        border-color: #667eea;
+        background: #f8faff;
+    }
+
+    /* ================ КАПШЕНИ ТА НЕВЕЛИКИЙ ТЕКСТ ================ */
+    .stMarkdown p {
+        line-height: 1.7;
+        color: #334155;
+    }
+
+    caption {
+        color: #64748b;
+        font-style: italic;
+        font-size: 0.9rem;
+        margin-top: 8px;
+    }
+
+    /* ================ ПРОГРЕС БАР ================ */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+    }
+
+    /* ================ СПИННЕР ================ */
+    .stSpinner > div {
+        border-top-color: #667eea;
+    }
+
+    /* ================ АДАПТИВНІСТЬ (МОБІЛЬНІ) ================ */
     @media (max-width: 768px) {
+        .block-container {
+            padding: 1rem 1.5rem;
+        }
+
         .stPlotlyChart {
             height: 350px !important;
+            padding: 15px;
         }
-        .element-container {
-            font-size: 14px !important;
-        }
+
         h1 {
             font-size: 24px !important;
+            padding-left: 15px;
         }
+
         h2 {
             font-size: 20px !important;
+            padding-left: 12px;
         }
+
         h3 {
             font-size: 18px !important;
+            padding-left: 10px;
         }
-        .row-widget.stButton {
-            width: 100% !important;
-        }
-        /* Повноширинні метрики на мобільних */
+
         [data-testid="metric-container"] {
             min-width: 100% !important;
+            padding: 15px;
+        }
+
+        [data-testid="column"] {
+            margin: 10px 0;
+        }
+
+        .stButton button {
+            width: 100%;
+            padding: 15px;
         }
     }
 
-    /* Покращена читабельність на всіх пристроях */
-    .stMarkdown {
-        line-height: 1.6;
+    /* ================ ДОДАТКОВІ ПОКРАЩЕННЯ ================ */
+    /* Плавне з'явлення елементів */
+    .element-container {
+        animation: fadeIn 0.5s ease-in;
     }
 
-    /* Виділення пріоритетів */
+    /* Прикрашення для цитат */
+    blockquote {
+        border-left: 5px solid #667eea;
+        padding-left: 20px;
+        margin: 20px 0;
+        background: linear-gradient(90deg, #f8faff 0%, white 100%);
+        padding: 15px 20px;
+        border-radius: 8px;
+    }
+
+    /* Стилізація коду */
+    code {
+        background: #f1f5f9;
+        padding: 3px 8px;
+        border-radius: 5px;
+        color: #667eea;
+        font-family: 'Courier New', monospace;
+        border: 1px solid #e0e7ff;
+    }
+
+    /* Табы (якщо використовуються) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background: white;
+        padding: 10px;
+        border-radius: 12px;
+        border: 2px solid #e0e7ff;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background: white;
+        border-radius: 8px;
+        padding: 10px 20px;
+        border: 2px solid #e0e7ff;
+        transition: all 0.3s ease;
+    }
+
+    .stTabs [data-baseweb="tab"]:hover {
+        background: #f8faff;
+        border-color: #667eea;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+
+    /* Виділення пріоритетів (збережено з оригіналу) */
     .priority-box {
         border-left: 5px solid;
         padding: 15px;
         margin: 10px 0;
-        border-radius: 5px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
