@@ -45,7 +45,7 @@ st.markdown("""
 
     /* Стили для боковой панели */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         border-right: 3px solid #667eea;
         box-shadow: 4px 0 15px rgba(0,0,0,0.2);
     }
