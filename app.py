@@ -17,199 +17,336 @@ from io import BytesIO
 
 st.set_page_config(page_title="Аналіз товарів", layout="wide")
 
-# Современная стилизация с градиентами и рамками
+# Премиум стилизация с градиентами и современными эффектами
 st.markdown("""
 <style>
-    /* Градиентный фон для основного контейнера */
+    /* 1. Общий фон приложения */
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
-        background-size: 400% 400%;
-        animation: gradientShift 15s ease infinite;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
 
-    @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    /* Стильные контейнеры с рамками */
-    .stApp > div {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        margin: 10px 0;
-    }
-
-    /* Градиентные заголовки h1 */
-    h1 {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    /* 2. Главный заголовок */
+    .main-header {
+        font-size: 3rem;
         font-weight: 800;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 20px 0;
-        border-bottom: 3px solid transparent;
-        border-image: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-        border-image-slice: 1;
-        margin-bottom: 30px;
+        background: linear-gradient(120deg, #1f77b4, #667eea);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        border-bottom: 3px solid #667eea;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        text-align: center;
     }
 
-    /* Градиентные заголовки h2 */
+    /* Заголовки h1, h2, h3 */
+    h1 {
+        color: #2d3748;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        margin-bottom: 1.5rem;
+        background: linear-gradient(120deg, #1f77b4, #667eea);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
     h2 {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: 700;
-        padding: 15px 0;
-        border-left: 5px solid #f093fb;
-        padding-left: 15px;
-        margin: 25px 0 15px 0;
+        color: #2d3748;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        margin-bottom: 1.5rem;
     }
 
-    /* Градиентные заголовки h3 */
     h3 {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: 600;
-        padding: 10px 0;
-        border-left: 4px solid #4facfe;
-        padding-left: 12px;
-        margin: 20px 0 10px 0;
+        color: #2d3748;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+        margin-bottom: 1.5rem;
     }
 
-    /* Стильные рамки для разделов */
-    .stMarkdown {
-        border-radius: 15px;
-        padding: 15px;
-        margin: 10px 0;
+    /* 3. Боковая панель */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-right: 3px solid #667eea;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+        padding: 2rem 1rem;
     }
 
-    /* Рамки для метрик */
-    [data-testid="stMetricValue"] {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        border-radius: 12px;
-        padding: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Стильные кнопки с градиентом */
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 12px 30px;
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        transition: all 0.3s ease;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    }
-
-    /* Рамки для боковой панели */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
-        border-right: 3px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-    }
-
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-
-    /* Рамки для информационных блоков */
-    .stAlert {
-        border-radius: 12px;
-        border: 2px solid rgba(102, 126, 234, 0.3);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Рамки для expander */
-    .streamlit-expanderHeader {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    /* 4. Основной контейнер */
+    .main .block-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         border: 2px solid rgba(102, 126, 234, 0.2);
-        border-radius: 12px;
-        padding: 10px;
-        font-weight: 600;
+        padding: 2rem 3rem;
+        margin: 2rem auto;
     }
 
-    /* Рамки для dataframe */
-    .stDataFrame {
-        border: 2px solid rgba(102, 126, 234, 0.2);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Разделительные линии */
+    /* 5. Разделитель */
     hr {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #667eea, transparent);
         border: none;
-        height: 3px;
-        background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #4facfe);
-        margin: 30px 0;
-        border-radius: 2px;
+        margin: 2rem 0;
     }
 
-    /* Рамки для input полей */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div > div,
-    .stNumberInput > div > div > input {
-        border: 2px solid rgba(102, 126, 234, 0.3);
+    /* 6. Карточки метрик */
+    .metric-container, [data-testid="stMetric"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        padding: 1.5rem;
+        margin: 0.5rem 0;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
+    }
+
+    .metric-container:hover, [data-testid="stMetric"]:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+    }
+
+    [data-testid="stMetricValue"] {
+        color: white !important;
+        font-size: 2rem !important;
+        font-weight: bold;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    /* 7. Карточки инсайтов */
+    .insight-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border-radius: 12px;
+        color: white;
+        padding: 1.2rem;
+        margin: 0.5rem 0;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        border-left: 5px solid #fff;
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    /* 8. Карточки проблем */
+    .problem-card {
+        background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+        border-radius: 12px;
+        color: white;
+        font-weight: 500;
+        padding: 1.2rem;
+        margin: 0.5rem 0;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        border-left: 5px solid #ee5a6f;
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    /* 9. Карточки точности */
+    .accuracy-card {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        border-radius: 15px;
+        color: white;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    /* 10. Колонки */
+    div[data-testid="column"] {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    div[data-testid="column"]:hover {
+        border-color: rgba(102, 126, 234, 0.4);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+
+    /* 11. Элементы управления */
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div,
+    .stSlider,
+    .stDateInput,
+    .stNumberInput > div > div,
+    .stTextInput > div > div {
+        background: white;
         border-radius: 10px;
-        padding: 10px;
+        padding: 0.5rem;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .stTextInput > div > div > input,
+    .stSelectbox select,
+    .stNumberInput input {
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        border-radius: 8px;
+        padding: 0.5rem;
         transition: all 0.3s ease;
     }
 
     .stTextInput > div > div > input:focus,
-    .stSelectbox > div > div > div:focus,
-    .stNumberInput > div > div > input:focus {
+    .stSelectbox select:focus,
+    .stNumberInput input:focus {
         border-color: #667eea;
-        box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
     }
 
-    /* Рамки для slider */
-    .stSlider {
-        padding: 15px;
-        background: rgba(255, 255, 255, 0.5);
+    /* 12. Кнопки */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 10px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    /* 13. Вкладки */
+    .stTabs [data-baseweb="tab-list"] {
+        background: rgba(255, 255, 255, 0.9);
         border-radius: 12px;
         border: 2px solid rgba(102, 126, 234, 0.2);
-        margin: 10px 0;
+        padding: 1rem;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
 
-    /* Стильные разграничения между секциями */
-    .stMarkdown + .stMarkdown {
-        margin-top: 25px;
-        padding-top: 25px;
+    .stTabs [data-baseweb="tab"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        border: 2px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
     }
 
-    /* Рамки для radio buttons */
+    .stTabs [data-baseweb="tab"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        border-color: rgba(255,255,255,0.5);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+
+    /* 14. Expander */
+    .streamlit-expanderHeader {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 10px;
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        padding: 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .streamlit-expanderHeader:hover {
+        border-color: rgba(102, 126, 234, 0.5);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .streamlit-expanderContent {
+        background: rgba(255, 255, 255, 0.7);
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* 15. Графики */
+    .js-plotly-plot {
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        background: white;
+        margin: 1rem 0;
+        overflow: hidden;
+    }
+
+    /* 16. Таблицы */
+    .dataframe {
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    [data-testid="stDataFrame"] {
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    /* 17. Информационные блоки */
+    .stAlert {
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+    }
+
+    /* 18. Секции с разделением */
+    .section-divider {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        margin: 2rem 0;
+        padding: 2rem;
+    }
+
+    /* 19. Радио кнопки */
     .stRadio > div {
         background: rgba(255, 255, 255, 0.7);
         border: 2px solid rgba(102, 126, 234, 0.2);
         border-radius: 12px;
-        padding: 15px;
+        padding: 1rem;
     }
 
-    /* Рамки для file uploader */
+    /* 20. Загрузчик файлов */
     [data-testid="stFileUploader"] {
+        background: white;
         border: 2px dashed rgba(102, 126, 234, 0.4);
         border-radius: 12px;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.5);
+        padding: 2rem;
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="stFileUploader"]:hover {
+        border-color: rgba(102, 126, 234, 0.6);
+        background: rgba(102, 126, 234, 0.05);
+    }
+
+    /* Дополнительные стили для улучшения визуала */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 10px;
+    }
+
+    .stSpinner > div {
+        border-top-color: #667eea !important;
     }
 </style>
 """, unsafe_allow_html=True)
