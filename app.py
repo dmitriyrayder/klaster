@@ -17,6 +17,203 @@ from io import BytesIO
 
 st.set_page_config(page_title="Аналіз товарів", layout="wide")
 
+# Современная стилизация с градиентами и рамками
+st.markdown("""
+<style>
+    /* Градиентный фон для основного контейнера */
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Стильные контейнеры с рамками */
+    .stApp > div {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin: 10px 0;
+    }
+
+    /* Градиентные заголовки h1 */
+    h1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 20px 0;
+        border-bottom: 3px solid transparent;
+        border-image: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+        border-image-slice: 1;
+        margin-bottom: 30px;
+    }
+
+    /* Градиентные заголовки h2 */
+    h2 {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        padding: 15px 0;
+        border-left: 5px solid #f093fb;
+        padding-left: 15px;
+        margin: 25px 0 15px 0;
+    }
+
+    /* Градиентные заголовки h3 */
+    h3 {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+        padding: 10px 0;
+        border-left: 4px solid #4facfe;
+        padding-left: 12px;
+        margin: 20px 0 10px 0;
+    }
+
+    /* Стильные рамки для разделов */
+    .stMarkdown {
+        border-radius: 15px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+
+    /* Рамки для метрик */
+    [data-testid="stMetricValue"] {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        padding: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Стильные кнопки с градиентом */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 30px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    /* Рамки для боковой панели */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+        border-right: 3px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+
+    /* Рамки для информационных блоков */
+    .stAlert {
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Рамки для expander */
+    .streamlit-expanderHeader {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        border-radius: 12px;
+        padding: 10px;
+        font-weight: 600;
+    }
+
+    /* Рамки для dataframe */
+    .stDataFrame {
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Разделительные линии */
+    hr {
+        border: none;
+        height: 3px;
+        background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #4facfe);
+        margin: 30px 0;
+        border-radius: 2px;
+    }
+
+    /* Рамки для input полей */
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div,
+    .stNumberInput > div > div > input {
+        border: 2px solid rgba(102, 126, 234, 0.3);
+        border-radius: 10px;
+        padding: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .stTextInput > div > div > input:focus,
+    .stSelectbox > div > div > div:focus,
+    .stNumberInput > div > div > input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Рамки для slider */
+    .stSlider {
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 12px;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        margin: 10px 0;
+    }
+
+    /* Стильные разграничения между секциями */
+    .stMarkdown + .stMarkdown {
+        margin-top: 25px;
+        padding-top: 25px;
+    }
+
+    /* Рамки для radio buttons */
+    .stRadio > div {
+        background: rgba(255, 255, 255, 0.7);
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        border-radius: 12px;
+        padding: 15px;
+    }
+
+    /* Рамки для file uploader */
+    [data-testid="stFileUploader"] {
+        border: 2px dashed rgba(102, 126, 234, 0.4);
+        border-radius: 12px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.5);
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Ініціалізація session_state
 if 'run_analysis' not in st.session_state:
     st.session_state.run_analysis = False
