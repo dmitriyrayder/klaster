@@ -1536,7 +1536,7 @@ def main():
                 if os.path.exists('google_sheets_cache_time.txt'):
                     with open('google_sheets_cache_time.txt', 'r') as f:
                         cache_time = datetime.fromisoformat(f.read())
-                        st.caption(f"📅 Оновлено: {cache_time.strftime('%d.%m %H:%M')}")
+                        st.info(f"📅 Оновлено: {cache_time.strftime('%d.%m %H:%M')}")
 
             # Загружаем данные из Google Sheets с кэшем
             df = load_from_google_sheets_cached(google_sheets_url, cache_duration)
